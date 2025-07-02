@@ -1,3 +1,5 @@
+#ifndef __hashMap_h
+#define __hashMap_h
 #include <stdint.h>
 #define KEY_SIZE 256
 #define FIELD_DATA_SIZE 1024
@@ -24,3 +26,4 @@ typedef struct HashMap {
 
 
 HashMapEntryData* get(HashMap* map, char key[KEY_SIZE]);
+#endif

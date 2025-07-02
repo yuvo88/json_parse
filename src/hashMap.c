@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 #include "hashMap.h"
 
@@ -14,7 +15,7 @@ uint32_t fnv1a(const char* data, size_t len) {
     return hash;
 }
 
-struct HashMapEntryData* get(HashMap *map, char *key) {
+HashMapEntryData* get(HashMap *map, char *key) {
 	uint32_t hash = fnv1a(key, strnlen(key, KEY_SIZE));
 
 	HashMapEntry* entry = (HashMapEntry*)(map->entries + (sizeof(HashMapEntry) * hash));
