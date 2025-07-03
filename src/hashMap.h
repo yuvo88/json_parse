@@ -1,6 +1,7 @@
 #ifndef __hashMap_h
 #define __hashMap_h
 #include <stdint.h>
+#include <stddef.h>
 #define KEY_SIZE 256
 #define FIELD_DATA_SIZE 1024
 
@@ -20,10 +21,11 @@ typedef struct HashMapEntry {
 } HashMapEntry;
 
 typedef struct HashMap {
-	HashMapEntry* entries;
+	HashMapEntry** entries;
 	uint32_t count;
 } HashMap;
 
 
-HashMapEntryData* get(HashMap* map, char key[KEY_SIZE]);
+HashMapEntryData* getFromHash(HashMap* map, const char* key);
+uint32_t fnv1a(const char* data, size_t len);
 #endif

@@ -1,22 +1,19 @@
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
+#include "hashMap.h"
 
-uint32_t fnv1a(const char* data, size_t len) {
-    uint32_t hash = 2166136261u;
-    for (size_t i = 0; i < len; i++) {
-        hash ^= (uint8_t)data[i];
-        hash *= 16777619u;
-    }
-    return hash;
-}
 
 int main() {
-    uint32_t min = UINT32_MAX;
-    char best[8] = {0};
-
-	uint32_t res = fnv1a(t, 3);
-	printf("%u", res);
-
+	HashMapEntryData data = {.data = "sldfkjsdflkj", .type = VARCHAR};
+	HashMapEntry entry = {.key = "something", .next = NULL, .value = data}; 
+	HashMapEntry** entries = (HashMapEntry**)(malloc(sizeof(int) * UINT32_MAX));
+	uint32_t location = fnv1a("something", 9);
+	entries[location] = &entry;
+	HashMap hashmap = { .count = 1, .entries = entries};
+	HashMapEntryData* some = getFromHash(&hashmap, "something");
+	printf("returned_data: %s\n", some->data);
+	free(entries);
     return 0;
 }
