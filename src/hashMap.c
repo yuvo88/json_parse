@@ -16,7 +16,7 @@ uint32_t fnv1a(const char* data, size_t len) {
 }
 
 
-HashMapEntryData* getFromHash(HashMap* map, const char* key) {
+HashMapEntryData* getFromHashmap(HashMap* map, const char* key) {
 	uint32_t hash = fnv1a(key, strnlen(key, KEY_SIZE));
 
 	HashMapEntry* entry = map->entries[hash];

@@ -26,6 +26,6 @@ typedef struct HashMap {
 } HashMap;
 
 
-HashMapEntryData* getFromHash(HashMap* map, const char* key);
+HashMapEntryData* getFromHashmap(HashMap* map, const char* key);
 uint32_t fnv1a(const char* data, size_t len);
 #endif
