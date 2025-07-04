@@ -23,7 +23,7 @@ int getFromHashmap(HashMap* map, const char* key, HashMapEntryData* returnMap) {
 	}
 
 	if (map->entries == NULL) {
-		return EMPTRY_ENTRIES_ERROR;
+		return EMPTY_ENTRIES_ARRAY_ERROR;
 	}
 	uint32_t hash = fnv1a(key, strnlen(key, KEY_SIZE));
 

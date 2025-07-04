@@ -11,7 +11,7 @@ typedef enum FieldTypes {
 typedef enum ReturnCodes {
 	SUCCESS,
 	MISSING_KEY_ERROR,
-	EMPTRY_ENTRIES_ERROR,
+	EMPTY_ENTRIES_ARRAY_ERROR,
 	ENTRY_NOT_FOUND
 }ReturnCodes;
 typedef struct HashMapEntryData {
