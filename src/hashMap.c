@@ -19,11 +19,11 @@ uint32_t fnv1a(const char* data, size_t len) {
 
 int getFromHashmap(HashMap* map, const char* key, HashMapEntryData* returnMap) {
 	if (key == NULL) {
-		return MISSING_KEY_ERROR;
+		return INVALID_PARAMETER_ERROR;
 	}
 
 	if (map->entries == NULL) {
-		return EMPTY_ENTRIES_ARRAY_ERROR;
+		return INVALID_PARAMETER_ERROR;
 	}
 	uint32_t hash = fnv1a(key, strnlen(key, KEY_SIZE));
 
@@ -31,7 +31,7 @@ int getFromHashmap(HashMap* map, const char* key, HashMapEntryData* returnMap) {
 	HashMapEntry* entry = map->entries[hash];
 
 	if (entry == NULL) {
-		return ENTRY_NOT_FOUND;
+		return KEY_NOT_FOUND;
 	}
 	HashMapEntry* runner = entry;
 
@@ -40,7 +40,7 @@ int getFromHashmap(HashMap* map, const char* key, HashMapEntryData* returnMap) {
 	}
 
 	if (runner == NULL) {
-		return ENTRY_NOT_FOUND;
+		return KEY_NOT_FOUND;
 	}
 	*returnMap = runner->value;
 	return SUCCESS;

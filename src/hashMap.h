@@ -10,9 +10,8 @@ typedef enum FieldTypes {
 } FieldTypes;
 typedef enum ReturnCodes {
 	SUCCESS,
-	MISSING_KEY_ERROR,
-	EMPTY_ENTRIES_ARRAY_ERROR,
-	ENTRY_NOT_FOUND
+	INVALID_PARAMETER_ERROR,
+	KEY_NOT_FOUND
 }ReturnCodes;
 typedef struct HashMapEntryData {
 	char data[FIELD_DATA_SIZE];
