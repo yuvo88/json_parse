@@ -8,7 +8,12 @@
 typedef enum FieldTypes {
 	VARCHAR
 } FieldTypes;
-
+typedef enum ReturnCodes {
+	SUCCESS,
+	MISSING_KEY_ERROR,
+	EMPTRY_ENTRIES_ERROR,
+	ENTRY_NOT_FOUND
+}ReturnCodes;
 typedef struct HashMapEntryData {
 	char data[FIELD_DATA_SIZE];
 	FieldTypes type;
@@ -26,6 +31,6 @@ typedef struct HashMap {
 } HashMap;
 
 
-HashMapEntryData* getFromHashmap(HashMap* map, const char* key);
+int getFromHashmap(HashMap* map, const char* key, HashMapEntryData* returnMap);
 uint32_t fnv1a(const char* data, size_t len);
 #endif

@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <bits/pthreadtypes.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -16,13 +17,21 @@ uint32_t fnv1a(const char* data, size_t len) {
 }
 
 
-HashMapEntryData* getFromHashmap(HashMap* map, const char* key) {
+int getFromHashmap(HashMap* map, const char* key, HashMapEntryData* returnMap) {
+	if (key == NULL) {
+		return MISSING_KEY_ERROR;
+	}
+
+	if (map->entries == NULL) {
+		return EMPTRY_ENTRIES_ERROR;
+	}
 	uint32_t hash = fnv1a(key, strnlen(key, KEY_SIZE));
+
 
 	HashMapEntry* entry = map->entries[hash];
 
 	if (entry == NULL) {
-		return NULL;
+		return ENTRY_NOT_FOUND;
 	}
 	HashMapEntry* runner = entry;
 
@@ -31,8 +40,8 @@ HashMapEntryData* getFromHashmap(HashMap* map, const char* key) {
 	}
 
 	if (runner == NULL) {
-		return NULL;
+		return ENTRY_NOT_FOUND;
 	}
-
-	return &runner->value;
+	*returnMap = runner->value;
+	return SUCCESS;
 }
