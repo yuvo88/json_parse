@@ -1,35 +1,33 @@
 #ifndef __hashMap_h
 #define __hashMap_h
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 #define KEY_SIZE 256
 #define FIELD_DATA_SIZE 1024
 
-typedef enum FieldTypes {
-	VARCHAR
-} FieldTypes;
+typedef enum FieldTypes { VARCHAR } FieldTypes;
 typedef enum ReturnCodes {
-	SUCCESS,
-	INVALID_PARAMETER_ERROR,
-	KEY_NOT_FOUND
-}ReturnCodes;
+    SUCCESS,
+    INVALID_PARAMETER_ERROR,
+    KEY_NOT_FOUND
+} ReturnCodes;
 typedef struct HashMapEntryData {
-	char data[FIELD_DATA_SIZE];
-	FieldTypes type;
-} HashMapEntryData; 
+    char data[FIELD_DATA_SIZE];
+    FieldTypes type;
+} HashMapEntryData;
 
 typedef struct HashMapEntry {
-	char key[KEY_SIZE];
-	HashMapEntryData value;
-	struct HashMapEntry* next;
+    char key[KEY_SIZE];
+    HashMapEntryData value;
+    struct HashMapEntry* next;
 } HashMapEntry;
 
 typedef struct HashMap {
-	HashMapEntry** entries;
-	uint32_t count;
+    HashMapEntry** entries;
+    uint32_t count;
 } HashMap;
 
 
-int getFromHashmap(HashMap* map, const char* key, HashMapEntryData* returnMap);
-uint32_t fnv1a(const char* data, size_t len);
+int getFromHashmap (HashMap* map, const char* key, HashMapEntryData* returnMap);
+uint32_t fnv1a (const char* data, size_t len);
 #endif
