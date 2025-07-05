@@ -6,19 +6,15 @@
 #define FIELD_DATA_SIZE 1024
 
 typedef enum FieldTypes { VARCHAR } FieldTypes;
-typedef enum ReturnCodes {
-    SUCCESS,
-    INVALID_PARAMETER_ERROR,
-    KEY_NOT_FOUND
-} ReturnCodes;
+typedef enum ReturnCodes { SUCCESS, KEY_NOT_FOUND } ReturnCodes;
 typedef struct HashMapEntryData {
     char data[FIELD_DATA_SIZE];
     FieldTypes type;
-} HashMapEntryData;
+} FieldData;
 
 typedef struct HashMapEntry {
     char key[KEY_SIZE];
-    HashMapEntryData value;
+    FieldData value;
     struct HashMapEntry* next;
 } HashMapEntry;
 
@@ -28,6 +24,7 @@ typedef struct HashMap {
 } HashMap;
 
 
-int getFromHashmap (HashMap* map, const char* key, HashMapEntryData* returnMap);
+ReturnCodes hashmapGetByKey (HashMap* map, const char* key, FieldData* returnMap);
+ReturnCodes hashmapSetFieldData (HashMap* map, HashMapEntry* value);
 uint32_t fnv1a (const char* data, size_t len);
 #endif

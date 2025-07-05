@@ -1,8 +1,8 @@
 #include "hashMap.h"
 #include <assert.h>
-#include <bits/pthreadtypes.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 uint32_t fnv1a(const char *data, size_t len) {
@@ -16,14 +16,17 @@ uint32_t fnv1a(const char *data, size_t len) {
   return hash;
 }
 
-int getFromHashmap(HashMap *map, const char *key, HashMapEntryData *returnMap) {
-  if (key == NULL) {
-    return INVALID_PARAMETER_ERROR;
-  }
+void replaceHashmapEntryValue(HashMapEntry *source, HashMapEntry *destination) {
+  destination->value = source->value;
+  destination->next = source->next;
+}
 
-  if (map->entries == NULL) {
-    return INVALID_PARAMETER_ERROR;
-  }
+ReturnCodes hashmapGetByKey(HashMap *map, const char *key,
+                            FieldData *returnMap) {
+  assert(key != NULL);
+  assert(map != NULL);
+  assert(map->entries != NULL);
+  assert(returnMap != NULL);
   uint32_t hash = fnv1a(key, strnlen(key, KEY_SIZE));
 
   HashMapEntry *entry = map->entries[hash];
@@ -41,5 +44,37 @@ int getFromHashmap(HashMap *map, const char *key, HashMapEntryData *returnMap) {
     return KEY_NOT_FOUND;
   }
   *returnMap = runner->value;
+  return SUCCESS;
+}
+
+ReturnCodes hashmapSetFieldData(HashMap *map, HashMapEntry *value) {
+  assert(map != NULL);
+  assert(map->entries != NULL);
+  assert(value != NULL);
+  char *key = value->key;
+  assert(key != NULL);
+  uint32_t hash = fnv1a(key, strnlen(key, KEY_SIZE));
+
+  HashMapEntry *head = map->entries[hash];
+  if (head == NULL) {
+    map->entries[hash] = value;
+    map->count++;
+    return SUCCESS;
+  }
+  int cond = 1;
+  HashMapEntry *runner = head;
+  while (strncmp(runner->key, key, KEY_SIZE) != 0) {
+    if (runner->next != NULL) {
+      cond = 0;
+      break;
+    }
+    runner = runner->next;
+  }
+  if (!cond) {
+    runner->next = value;
+    map->count++;
+    return SUCCESS;
+  }
+  replaceHashmapEntryValue(value, runner);
   return SUCCESS;
 }
