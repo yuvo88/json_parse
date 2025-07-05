@@ -13,11 +13,10 @@ int main() {
   HashMap hashmap = {.count = 0, .entries = entries};
   int statusCode = hashmapSetFieldData(&hashmap, &entry1);
   statusCode = hashmapSetFieldData(&hashmap, &entry2);
-  FieldData *some = (FieldData *)(malloc(sizeof(FieldData)));
-  statusCode = hashmapGetByKey(&hashmap, "something", some);
-  printf("returned_data: %s, statusCode: %d\n", some->data, statusCode);
+  FieldData some = {.data = "", .type = VARCHAR};
+  statusCode = hashmapGetByKey(&hashmap, "something", &some);
+  printf("returned_data: %s, statusCode: %d\n", some.data, statusCode);
   free(entries);
-  free(some);
 
   return 0;
 }
