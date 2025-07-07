@@ -13,12 +13,65 @@ uint32_t fnv1a(const char *data, size_t len) {
     hash *= 16777619u;
   }
 
-  return hash;
+  return hash & (HASH_ARRAY_LENGTH - 1);
 }
 
 void replaceHashmapEntryValue(HashMapEntry *source, HashMapEntry *destination) {
   destination->value = source->value;
   destination->next = source->next;
+}
+
+HashMap createHashmap() {
+  HashMapEntry **entries =
+      (HashMapEntry **)(calloc(HASH_ARRAY_LENGTH, sizeof(HashMapEntry *)));
+  HashMap hashmap = {.count = 0, .entries = entries};
+  return hashmap;
+}
+
+void freeHashmap(HashMap hashmap) {
+  for (int i = 0; i < HASH_ARRAY_LENGTH; i++) {
+    if (hashmap.entries[i] == NULL) {
+      continue;
+    }
+    free(hashmap.entries[i]);
+  }
+  free(hashmap.entries);
+}
+
+ReturnCodes hashmapDeleteByKey(HashMap *map, const char *key) {
+  assert(key != NULL);
+  assert(map != NULL);
+  assert(map->entries != NULL);
+  uint32_t hash = fnv1a(key, strnlen(key, KEY_SIZE));
+  HashMapEntry *entry = map->entries[hash];
+
+  if (entry == NULL) {
+    return KEY_NOT_FOUND;
+  }
+  HashMapEntry *runner = entry;
+  HashMapEntry *previous = NULL;
+  int cond = 1;
+  while (strncmp(runner->key, key, KEY_SIZE) != 0) {
+    if (runner == NULL) {
+      cond = 0;
+      break;
+    }
+    runner = runner->next;
+    previous = runner;
+  }
+  if (!cond) {
+    return KEY_NOT_FOUND;
+  }
+  if (previous == NULL) {
+    map->entries[hash] = NULL;
+    free(runner);
+    map->count--;
+    return SUCCESS;
+  }
+  previous->next = runner->next;
+  free(runner);
+  map->count--;
+  return SUCCESS;
 }
 
 ReturnCodes hashmapGetByKey(HashMap *map, const char *key,
@@ -47,17 +100,18 @@ ReturnCodes hashmapGetByKey(HashMap *map, const char *key,
   return SUCCESS;
 }
 
-ReturnCodes hashmapSetFieldData(HashMap *map, HashMapEntry *value) {
+ReturnCodes hashmapSetFieldData(HashMap *map, const char *key,
+                                FieldData value) {
   assert(map != NULL);
   assert(map->entries != NULL);
-  assert(value != NULL);
-  char *key = value->key;
   assert(key != NULL);
+  HashMapEntry *entry = (HashMapEntry *)(malloc(sizeof(HashMapEntry)));
   uint32_t hash = fnv1a(key, strnlen(key, KEY_SIZE));
+  memcpy(&entry->value, &value, sizeof(FieldData));
 
   HashMapEntry *head = map->entries[hash];
   if (head == NULL) {
-    map->entries[hash] = value;
+    map->entries[hash] = entry;
     map->count++;
     return SUCCESS;
   }
@@ -71,10 +125,10 @@ ReturnCodes hashmapSetFieldData(HashMap *map, HashMapEntry *value) {
     runner = runner->next;
   }
   if (!cond) {
-    runner->next = value;
+    runner->next = entry;
     map->count++;
     return SUCCESS;
   }
-  replaceHashmapEntryValue(value, runner);
+  replaceHashmapEntryValue(entry, runner);
   return SUCCESS;
 }
