@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(SQLike)
+project(json-parse)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # set(CMAKE_C_FLAGS "-Wall")
@@ -11,7 +11,7 @@ file(GLOB_RECURSE sources
 # Add precompiler definitions like that:
 add_definitions(-DSOME_DEFINITION)
 
-add_executable(SQLike ${sources})
+add_executable(json-parse ${sources})
 
 # Add more include directories if needed
 # target_include_directories(SQLike PUBLIC "${CMAKE_SOURCE_DIR}/src/includes")
