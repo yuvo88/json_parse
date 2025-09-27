@@ -11,7 +11,7 @@ SuperPrimitive* createSuperPrimitiveInt(int value);
 SuperPrimitive* createSuperPrimitiveFloat (float value);
 SuperPrimitive* createSuperPrimitiveChar (char value);
 SuperPrimitive* createSuperPrimitiveBool (uint8_t value);
-SuperPrimitive* createSuperPrimitiveString (const char* value);
+SuperPrimitive* createSuperPrimitiveString (const char* value, uint32_t length);
 void printSuperPrimitive(SuperPrimitive* superPrimitive);
 void freeSuperPrimitive(SuperPrimitive* superPrimitive);
 uint32_t fnv1(SuperPrimitive* superPrimitive, uint32_t mask);
