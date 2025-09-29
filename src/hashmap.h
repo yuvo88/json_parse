@@ -13,6 +13,7 @@ typedef struct HashmapEntry {
     uint32_t valueSize;
     SuperPrimitive* key;
     HashmapEntryType type;
+    struct HashmapEntry* next;
 } HashmapEntry;
 typedef struct Hashmap {
     HashmapEntry** entries;
@@ -20,4 +21,5 @@ typedef struct Hashmap {
 } Hashmap;
 Hashmap* createHashmap ();
 void freeHashmap (Hashmap* hashmap);
+void setKeyAndValue (Hashmap* hashmap, SuperPrimitive* key, void* value, uint32_t valueSize, HashmapEntryType type);
 #endif
