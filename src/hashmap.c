@@ -1,10 +1,12 @@
 #include "hashmap.h"
 #include "superPrimitive.h"
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-
+void printHashmapEntry (HashmapEntry* entry, uint32_t amount);
+void printHashmapPrivate (Hashmap* hashmap, uint32_t amount);
 Hashmap* createHashmap () {
     HashmapEntry** entries =
     (HashmapEntry**)(calloc (ARRAY_INITIAL_LENGTH, sizeof (HashmapEntry*)));
@@ -34,10 +36,9 @@ void freeHashmap (Hashmap* hashmap) {
     free (hashmap);
 }
 
-void setKeyAndValue (Hashmap* hashmap, SuperPrimitive* key, void* value, uint32_t valueSize, HashmapEntryType type) {
+void setKeyAndValue (Hashmap* hashmap, SuperPrimitive* key, void* value, HashmapEntryType type) {
     HashmapEntry* entry = (HashmapEntry*)malloc (sizeof (HashmapEntry));
     entry->value        = value;
-    entry->valueSize    = valueSize;
     entry->type         = type;
     entry->key          = key;
     entry->next         = NULL;
@@ -62,11 +63,66 @@ void setKeyAndValue (Hashmap* hashmap, SuperPrimitive* key, void* value, uint32_
         runner = head->next;
     }
     if (found) {
-        runner->value     = value;
-        runner->valueSize = valueSize;
-        runner->type      = type;
+        runner->value = value;
+        runner->type  = type;
         return;
     }
 
     runner->next = entry;
+}
+
+void printHashmap (Hashmap* hashmap) {
+    printHashmapPrivate (hashmap, 0);
+    printf ("\n");
+}
+
+void printSpaces (uint32_t amount) {
+    for (uint32_t i = 0; i < amount; i++) {
+        printf (" ");
+    }
+}
+
+void printHashmapPrivate (Hashmap* hashmap, uint32_t amount) {
+    int firstValue        = 1;
+    uint32_t insideAmount = amount + 4;
+    printf ("{\n");
+    for (uint32_t i = 0; i < hashmap->length; i++) {
+        HashmapEntry* entry = hashmap->entries[i];
+        if (entry == NULL) {
+            continue;
+        }
+
+        if (!firstValue) {
+            printf (",\n");
+        } else {
+            firstValue = 0;
+        }
+        printSpaces (insideAmount);
+        printHashmapEntry (entry, amount);
+        HashmapEntry* runner = entry->next;
+        while (runner != NULL) {
+            printf (",\n");
+            printSpaces (insideAmount);
+            printHashmapEntry (runner, amount);
+            runner = runner->next;
+        }
+    }
+    printf ("\n");
+    printSpaces (amount);
+    printf ("}");
+}
+
+void printHashmapEntry (HashmapEntry* entry, uint32_t amount) {
+    printSuperPrimitive (entry->key);
+    printf (":");
+    printf (" ");
+    switch (entry->type) {
+    case SUPER_PRIMITIVE:
+        printSuperPrimitive ((SuperPrimitive*)entry->value);
+        break;
+    case HASHMAP:
+        printHashmapPrivate ((Hashmap*)entry->value, amount + 4);
+        break;
+    case LIST: break;
+    }
 }

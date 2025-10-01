@@ -10,7 +10,6 @@ typedef enum HashmapEntryType {
 } HashmapEntryType;
 typedef struct HashmapEntry {
     void* value;
-    uint32_t valueSize;
     SuperPrimitive* key;
     HashmapEntryType type;
     struct HashmapEntry* next;
@@ -21,5 +20,6 @@ typedef struct Hashmap {
 } Hashmap;
 Hashmap* createHashmap ();
 void freeHashmap (Hashmap* hashmap);
-void setKeyAndValue (Hashmap* hashmap, SuperPrimitive* key, void* value, uint32_t valueSize, HashmapEntryType type);
+void setKeyAndValue (Hashmap* hashmap, SuperPrimitive* key, void* value, HashmapEntryType type);
+void printHashmap (Hashmap* hashmap);
 #endif

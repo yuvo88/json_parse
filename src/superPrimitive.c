@@ -54,18 +54,18 @@ SuperPrimitive* createSuperPrimitive (void* value, uint32_t size, SuperPrimitive
 
 void printSuperPrimitive (SuperPrimitive* superPrimitive) {
     switch (superPrimitive->type) {
-    case INTEGER: printf ("value: %d\n", *(int*)superPrimitive->value); break;
-    case STRING: printf ("value: %s\n", (char*)superPrimitive->value); break;
-    case FLOAT: printf ("value: %f\n", *(float*)superPrimitive->value); break;
+    case INTEGER: printf ("%d", *(int*)superPrimitive->value); break;
+    case STRING: printf ("\"%s\"", (char*)superPrimitive->value); break;
+    case FLOAT: printf ("%f", *(float*)superPrimitive->value); break;
     case BOOL:
 
         if (*(uint8_t*)superPrimitive->value) {
-            printf ("value: true\n");
+            printf ("true");
         } else {
-            printf ("value: false\n");
+            printf ("false");
         }
         break;
-    case CHAR: printf ("value: %c\n", *(char*)superPrimitive->value); break;
+    case CHAR: printf ("%c", *(char*)superPrimitive->value); break;
     }
 }
 
