@@ -6,7 +6,7 @@
 #include <string.h>
 #include <sys/types.h>
 SuperPrimitive* createSuperPrimitive (void* value, uint32_t size, SuperPrimitiveType type);
-uint32_t fnv1 (SuperPrimitive* superPrimitive, uint32_t mask) {
+uint32_t fnv1 (SuperPrimitive* superPrimitive) {
     assert (superPrimitive->type != BOOL);
     uint32_t hash = 2166136261u;
     for (uint32_t i = 0; i < superPrimitive->size; i++) {
@@ -14,7 +14,7 @@ uint32_t fnv1 (SuperPrimitive* superPrimitive, uint32_t mask) {
         hash ^= *((uint8_t*)superPrimitive->value + i);
     }
 
-    return hash & mask;
+    return hash;
 }
 
 SuperPrimitive* createSuperPrimitiveInt (int value) {

@@ -20,5 +20,5 @@ SuperPrimitive* createSuperPrimitiveBool (uint8_t value);
 SuperPrimitive* createSuperPrimitiveString (const char* value, uint32_t length);
 void printSuperPrimitive (SuperPrimitive* superPrimitive);
 void freeSuperPrimitive (SuperPrimitive* superPrimitive);
-uint32_t fnv1 (SuperPrimitive* superPrimitive, uint32_t mask);
+uint32_t fnv1 (SuperPrimitive* superPrimitive);
 #endif
