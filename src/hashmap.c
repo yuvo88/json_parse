@@ -5,16 +5,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-void printHashmapEntryPrivate (HashmapEntry* entry, uint32_t amount);
-void printHashmapPrivate (Hashmap* hashmap, uint32_t amount);
-void printHashmapEntryValuePrivate (HashmapEntry* entry, uint32_t spaceAmount);
+void printHashmapEntry (HashmapEntry* entry, uint32_t amount);
+void printHashmap (Hashmap* hashmap, uint32_t amount);
+void printHashmapEntryValue (HashmapEntry* entry, uint32_t spaceAmount);
 void freeHashmapEntry (HashmapEntry* entry);
-void adjustEntryArrayLength (Hashmap* hashmap);
-void setKeyAndValuePrivate (Hashmap* hashmap,
-SuperPrimitive* key,
-void* value,
-HashmapEntryType type,
-uint32_t hashOriginal);
+void expandEntryArray (Hashmap* hashmap);
+int setHashmapEntryWithMask (HashmapEntry** entries, HashmapEntry* entry, uint32_t mask
+
+);
 
 Hashmap* createHashmap () {
     HashmapEntry** entries =
@@ -49,35 +47,36 @@ void freeHashmapEntry (HashmapEntry* entry) {
     free (entry);
 }
 
-void setKeyAndValue (Hashmap* hashmap, SuperPrimitive* key, void* value, HashmapEntryType type) {
-    uint32_t hashOriginal = fnv1 (key);
-    setKeyAndValuePrivate (hashmap, key, value, type, hashOriginal);
-}
-
-void setKeyAndValuePrivate (Hashmap* hashmap,
-SuperPrimitive* key,
-void* value,
-HashmapEntryType type,
-uint32_t hashOriginal) {
+void setHashmapEntry (Hashmap* hashmap, SuperPrimitive* key, void* value, HashmapEntryType type) {
     HashmapEntry* entry = (HashmapEntry*)malloc (sizeof (HashmapEntry));
     entry->value        = value;
     entry->type         = type;
     entry->key          = key;
     entry->next         = NULL;
-    entry->hashOriginal = hashOriginal;
-    uint32_t hash       = hashOriginal & (hashmap->length - 1);
-    HashmapEntry* head  = hashmap->entries[hash];
+    entry->originalHash = fnv1 (key);
+    int nextlistLegnth =
+    setHashmapEntryWithMask (hashmap->entries, entry, hashmap->length - 1);
+    if (nextlistLegnth >= 1) {
+        expandEntryArray (hashmap);
+    }
+}
+
+int setHashmapEntryWithMask (HashmapEntry** entries, HashmapEntry* entry, uint32_t mask
+
+) {
+    uint32_t hash      = entry->originalHash & mask;
+    HashmapEntry* head = entries[hash];
     if (head == NULL) {
-        hashmap->entries[hash] = entry;
-        return;
+        entries[hash] = entry;
+        return 0;
     }
 
     HashmapEntry* runner = head;
     int found            = 1;
     int nextListLength   = 0;
     while (1) {
-        if (runner->key->size == key->size &&
-        memcmp (runner->key->value, key->value, runner->key->size) == 0) {
+        if (runner->key->size == entry->key->size &&
+        memcmp (runner->key->value, entry->key->value, runner->key->size) == 0) {
             break;
         }
         if (runner->next == NULL) {
@@ -88,15 +87,13 @@ uint32_t hashOriginal) {
         runner = head->next;
     }
     if (found) {
-        runner->value = value;
-        runner->type  = type;
-        return;
+        runner->value = entry->value; // TODO: Leaking memory here
+        runner->type  = entry->type;
+        return 0;
     }
 
     runner->next = entry;
-    if (nextListLength > 3) {
-        adjustEntryArrayLength (hashmap);
-    }
+    return nextListLength;
 }
 HashmapReturnCodes deleteEntryByKey (Hashmap* hashmap, SuperPrimitive* key) {
     uint32_t hash        = fnv1 (key) & (hashmap->length - 1);
@@ -133,8 +130,8 @@ HashmapReturnCodes deleteEntryByKey (Hashmap* hashmap, SuperPrimitive* key) {
     return SUCCESS;
 }
 
-void printHashmap (Hashmap* hashmap) {
-    printHashmapPrivate (hashmap, 0);
+void printHashmapln (Hashmap* hashmap) {
+    printHashmap (hashmap, 0);
     printf ("\n");
 }
 
@@ -144,17 +141,17 @@ void printSpaces (uint32_t amount) {
     }
 }
 
-void printHashmapEntry (HashmapEntry* entry) {
-    printHashmapEntryPrivate (entry, 0);
+void printHashmapEntryln (HashmapEntry* entry) {
+    printHashmapEntry (entry, 0);
     printf ("\n");
 }
 
-void printHashmapEntryValue (HashmapEntry* entry) {
-    printHashmapEntryValuePrivate (entry, 0);
+void printHashmapEntryValueln (HashmapEntry* entry) {
+    printHashmapEntryValue (entry, 0);
     printf ("\n");
 }
 
-void printHashmapPrivate (Hashmap* hashmap, uint32_t spaceAmount) {
+void printHashmap (Hashmap* hashmap, uint32_t spaceAmount) {
     int firstValue        = 1;
     uint32_t insideAmount = spaceAmount + 4;
     printf ("{\n");
@@ -170,12 +167,12 @@ void printHashmapPrivate (Hashmap* hashmap, uint32_t spaceAmount) {
             firstValue = 0;
         }
         printSpaces (insideAmount);
-        printHashmapEntryPrivate (entry, spaceAmount);
+        printHashmapEntry (entry, spaceAmount);
         HashmapEntry* runner = entry->next;
         while (runner != NULL) {
             printf (",\n");
             printSpaces (insideAmount);
-            printHashmapEntryPrivate (runner, spaceAmount);
+            printHashmapEntry (runner, spaceAmount);
             runner = runner->next;
         }
     }
@@ -184,23 +181,21 @@ void printHashmapPrivate (Hashmap* hashmap, uint32_t spaceAmount) {
     printf ("}");
 }
 
-void printHashmapEntryValuePrivate (HashmapEntry* entry, uint32_t spaceAmount) {
+void printHashmapEntryValue (HashmapEntry* entry, uint32_t spaceAmount) {
     switch (entry->type) {
     case SUPER_PRIMITIVE:
         printSuperPrimitive ((SuperPrimitive*)entry->value);
         break;
-    case HASHMAP:
-        printHashmapPrivate ((Hashmap*)entry->value, spaceAmount + 4);
-        break;
+    case HASHMAP: printHashmap ((Hashmap*)entry->value, spaceAmount + 4); break;
     case LIST: break;
     }
 }
 
-void printHashmapEntryPrivate (HashmapEntry* entry, uint32_t spaceAmount) {
+void printHashmapEntry (HashmapEntry* entry, uint32_t spaceAmount) {
     printSuperPrimitive (entry->key);
     printf (":");
     printf (" ");
-    printHashmapEntryValuePrivate (entry, spaceAmount);
+    printHashmapEntryValue (entry, spaceAmount);
 }
 
 HashmapReturnCodes
@@ -229,7 +224,7 @@ getValueByKey (Hashmap* hashmap, SuperPrimitive* key, HashmapEntry* returnValue)
     return SUCCESS;
 }
 
-void adjustEntryArrayLength (Hashmap* hashmap) {
+void expandEntryArray (Hashmap* hashmap) {
     uint32_t newLength = hashmap->length * 2;
     HashmapEntry** entries =
     (HashmapEntry**)(calloc (newLength, sizeof (HashmapEntry*)));
@@ -239,12 +234,19 @@ void adjustEntryArrayLength (Hashmap* hashmap) {
         if (entry == NULL) {
             continue;
         }
-        uint32_t hash = entry->hashOriginal & (newLength - 1);
-        setKeyAndValuePrivate (
-        hashmap, entry->key, entry->value, entry->type, entry->hashOriginal);
+        HashmapEntry* runner = entry->next;
+        entry->next          = NULL;
+        setHashmapEntryWithMask (entries, entry, newLength - 1);
+
+        while (runner != NULL) {
+            HashmapEntry* next = runner->next;
+            runner->next       = NULL;
+            setHashmapEntryWithMask (entries, runner, newLength - 1);
+            runner = next;
+        }
     }
 
     free (hashmap->entries);
     hashmap->entries = entries;
-    hashmap->length = newLength;
+    hashmap->length  = newLength;
 }

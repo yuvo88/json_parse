@@ -13,7 +13,7 @@ typedef struct HashmapEntry {
     void* value;
     SuperPrimitive* key;
     HashmapEntryType type;
-    uint32_t hashOriginal;
+    uint32_t originalHash;
     struct HashmapEntry* next;
 } HashmapEntry;
 typedef struct Hashmap {
@@ -23,10 +23,10 @@ typedef struct Hashmap {
 Hashmap* createHashmap ();
 HashmapReturnCodes deleteEntryByKey (Hashmap* hashmap, SuperPrimitive* key);
 void freeHashmap (Hashmap* hashmap);
-void setKeyAndValue (Hashmap* hashmap, SuperPrimitive* key, void* value, HashmapEntryType type);
-void printHashmap (Hashmap* hashmap);
-void printHashmapEntry (HashmapEntry* entry);
+void setHashmapEntry (Hashmap* hashmap, SuperPrimitive* key, void* value, HashmapEntryType type);
+void printHashmapln (Hashmap* hashmap);
+void printHashmapEntryln (HashmapEntry* entry);
 HashmapReturnCodes
 getValueByKey (Hashmap* hashmap, SuperPrimitive* key, HashmapEntry* returnValue);
-void printHashmapEntryValue (HashmapEntry* entry);
+void printHashmapEntryValueln (HashmapEntry* entry);
 #endif
