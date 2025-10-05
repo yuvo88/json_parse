@@ -1,7 +1,7 @@
 #include "hashmap.h"
 #include "superPrimitive.h"
+#include <assert.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -21,6 +21,7 @@ Hashmap* createHashmap () {
 }
 
 void freeHashmap (Hashmap* hashmap) {
+    assert(hashmap != NULL);
     for (uint32_t i = 0; i < hashmap->length; i++) {
         HashmapEntry* entry = (HashmapEntry*)(*(hashmap->entries + i));
         if (entry == NULL) {
@@ -33,6 +34,7 @@ void freeHashmap (Hashmap* hashmap) {
 }
 
 void freeHashmapEntry (HashmapEntry* entry) {
+    assert(entry != NULL);
     switch (entry->type) {
     case HASHMAP: freeHashmap ((Hashmap*)entry->value); break;
     case LIST: break;
@@ -45,6 +47,9 @@ void freeHashmapEntry (HashmapEntry* entry) {
 }
 
 void setHashmapEntry (Hashmap* hashmap, SuperPrimitive* key, void* value, HashmapEntryType type) {
+    assert(hashmap != NULL);
+    assert(key != NULL);
+    assert(value != NULL);
     HashmapEntry* entry = (HashmapEntry*)malloc (sizeof (HashmapEntry));
     entry->value        = value;
     entry->type         = type;
@@ -61,6 +66,9 @@ void setHashmapEntry (Hashmap* hashmap, SuperPrimitive* key, void* value, Hashma
 int setHashmapEntryWithMask (HashmapEntry** entries, HashmapEntry* entry, uint32_t mask
 
 ) { // TODO: This function returns a value and I don't think it should
+    assert(entries != NULL);
+    assert(entry != NULL);
+    assert((mask + 1) % 2 == 0);
     uint32_t hash      = entry->originalHash & mask;
     HashmapEntry* head = entries[hash];
     if (head == NULL) {
@@ -101,6 +109,8 @@ int setHashmapEntryWithMask (HashmapEntry** entries, HashmapEntry* entry, uint32
     return nextListLength;
 }
 HashmapReturnCodes deleteEntryByKey (Hashmap* hashmap, SuperPrimitive* key) {
+    assert(hashmap != NULL);
+    assert(key != NULL);
     uint32_t hash        = fnv1 (key) & (hashmap->length - 1);
     HashmapEntry* runner = hashmap->entries[hash];
     if (runner == NULL) {
@@ -138,6 +148,9 @@ HashmapReturnCodes deleteEntryByKey (Hashmap* hashmap, SuperPrimitive* key) {
 
 HashmapReturnCodes
 getValueByKey (Hashmap* hashmap, SuperPrimitive* key, HashmapEntry* returnValue) {
+    assert(hashmap != NULL);
+    assert(key != NULL);
+    assert(returnValue != NULL);
     uint32_t hash       = fnv1 (key) & (hashmap->length - 1);
     HashmapEntry* entry = hashmap->entries[hash];
     if (entry == NULL) {
@@ -163,6 +176,7 @@ getValueByKey (Hashmap* hashmap, SuperPrimitive* key, HashmapEntry* returnValue)
 }
 
 void expandEntryArray (Hashmap* hashmap) {
+    assert(hashmap != NULL);
     uint32_t newLength = hashmap->length * 2;
     HashmapEntry** entries =
     (HashmapEntry**)(calloc (newLength, sizeof (HashmapEntry*)));

@@ -1,8 +1,10 @@
 #include "hashmap.h"
+#include <assert.h>
 #include <stdio.h>
 
 
 void printHashmapln (Hashmap* hashmap) {
+    assert(hashmap != NULL);
     printHashmap (hashmap, 0);
     printf ("\n");
 }
@@ -14,16 +16,19 @@ void printSpaces (uint32_t amount) {
 }
 
 void printHashmapEntryln (HashmapEntry* entry) {
+    assert(entry != NULL);
     printHashmapEntry (entry, 0);
     printf ("\n");
 }
 
 void printHashmapEntryValueln (HashmapEntry* entry) {
+    assert(entry != NULL);
     printHashmapEntryValue (entry, 0);
     printf ("\n");
 }
 
 void printHashmap (Hashmap* hashmap, uint32_t spaceAmount) {
+    assert(hashmap != NULL);
     int firstValue        = 1;
     uint32_t insideAmount = spaceAmount + 4;
     printf ("{\n");
@@ -54,6 +59,7 @@ void printHashmap (Hashmap* hashmap, uint32_t spaceAmount) {
 }
 
 void printHashmapEntryValue (HashmapEntry* entry, uint32_t spaceAmount) {
+    assert(entry != NULL);
     switch (entry->type) {
     case SUPER_PRIMITIVE:
         printSuperPrimitive ((SuperPrimitive*)entry->value);
@@ -64,6 +70,7 @@ void printHashmapEntryValue (HashmapEntry* entry, uint32_t spaceAmount) {
 }
 
 void printHashmapEntry (HashmapEntry* entry, uint32_t spaceAmount) {
+    assert(entry != NULL);
     printSuperPrimitive (entry->key);
     printf (":");
     printf (" ");
