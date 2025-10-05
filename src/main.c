@@ -1,6 +1,5 @@
 #include "hashmap.h"
 #include "superPrimitive.h"
-#include <stdio.h>
 
 int main () {
     Hashmap* hashmap       = createHashmap ();
@@ -17,7 +16,6 @@ int main () {
     setHashmapEntry (hashmap, key3, value3, SUPER_PRIMITIVE);
     setHashmapEntry (hashmap, key4, value4, SUPER_PRIMITIVE);
 
-    printf("hashmap length: %u\n", hashmap->length);
     printHashmapln (hashmap);
     freeHashmap (hashmap);
     return 0;

@@ -29,4 +29,7 @@ void printHashmapEntryln (HashmapEntry* entry);
 HashmapReturnCodes
 getValueByKey (Hashmap* hashmap, SuperPrimitive* key, HashmapEntry* returnValue);
 void printHashmapEntryValueln (HashmapEntry* entry);
+void printHashmap (Hashmap* hashmap, uint32_t spaceAmount);
+void printHashmapEntry (HashmapEntry* entry, uint32_t spaceAmount);
+void printHashmapEntryValue (HashmapEntry* entry, uint32_t spaceAmount);
 #endif
