@@ -54,16 +54,16 @@ void setHashmapEntry (Hashmap* hashmap, SuperPrimitive* key, void* value, Hashma
     entry->key          = key;
     entry->next         = NULL;
     entry->originalHash = fnv1 (key);
-    int nextlistLegnth =
+    int nextListLegnth =
     setHashmapEntryWithMask (hashmap->entries, entry, hashmap->length - 1);
-    if (nextlistLegnth >= 1) {
+    if (nextListLegnth >= 2) {
         expandEntryArray (hashmap);
     }
 }
 
 int setHashmapEntryWithMask (HashmapEntry** entries, HashmapEntry* entry, uint32_t mask
 
-) {
+) { //TODO: This function returns a value and I don't think it should
     uint32_t hash      = entry->originalHash & mask;
     HashmapEntry* head = entries[hash];
     if (head == NULL) {
@@ -72,8 +72,9 @@ int setHashmapEntryWithMask (HashmapEntry** entries, HashmapEntry* entry, uint32
     }
 
     HashmapEntry* runner = head;
+    HashmapEntry* previous = NULL;
     int found            = 1;
-    int nextListLength   = 0;
+    int nextListLength   = 1;
     while (1) {
         if (runner->key->size == entry->key->size &&
         memcmp (runner->key->value, entry->key->value, runner->key->size) == 0) {
@@ -84,15 +85,22 @@ int setHashmapEntryWithMask (HashmapEntry** entries, HashmapEntry* entry, uint32
             break;
         }
         nextListLength++;
-        runner = head->next;
+        runner = runner->next;
+        previous = runner;
     }
-    if (found) {
-        runner->value = entry->value; // TODO: Leaking memory here
-        runner->type  = entry->type;
+    if (!found) {
+        runner->next = entry;
+        return nextListLength;
+    }
+
+    if (previous == NULL) {
+        entries[hash] = entry;
+        freeHashmapEntry(runner);
         return 0;
     }
 
-    runner->next = entry;
+    previous->next = entry;
+    freeHashmapEntry(runner);
     return nextListLength;
 }
 HashmapReturnCodes deleteEntryByKey (Hashmap* hashmap, SuperPrimitive* key) {
