@@ -22,11 +22,6 @@ void printHashmapEntryln (HashmapEntry* entry) {
     printf ("\n");
 }
 
-void printHashmapEntryValueln (HashmapEntry* entry) {
-    assert (entry != NULL);
-    printHashmapEntryValue (entry, 0);
-    printf ("\n");
-}
 
 void printHashmap (Hashmap* hashmap, uint32_t spaceAmount) {
     assert (hashmap != NULL);
@@ -59,23 +54,13 @@ void printHashmap (Hashmap* hashmap, uint32_t spaceAmount) {
     printf ("}");
 }
 
-void printHashmapEntryValue (HashmapEntry* entry, uint32_t spaceAmount) { // This function is not needed anymore remove it
-    assert (entry != NULL);
-    switch (entry->type) {
-    case SUPER_PRIMITIVE:
-        printSuperPrimitive ((SuperPrimitive*)entry->value);
-        break;
-    case HASHMAP: printHashmap ((Hashmap*)entry->value, spaceAmount + 4); break;
-    case LIST: break;
-    }
-}
 
 void printHashmapEntry (HashmapEntry* entry, uint32_t spaceAmount) {
     assert (entry != NULL);
     printSuperPrimitive (entry->key);
     printf (":");
     printf (" ");
-    printHashmapEntryValue (entry, spaceAmount);
+    printEntryValue (entry->value, spaceAmount);
 }
 
 void printEntryValueln (EntryValue* entryValue) {

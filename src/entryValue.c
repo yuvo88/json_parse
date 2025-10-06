@@ -1,7 +1,7 @@
 #include "hashmap.h"
 #include <stdlib.h>
 
-void freeEntryValue(EntryValue* entryValue) {
+void freeEntryValue (EntryValue* entryValue) {
     switch (entryValue->type) {
     case HASHMAP: freeHashmap ((Hashmap*)entryValue->value); break;
     case LIST: break;
@@ -9,11 +9,12 @@ void freeEntryValue(EntryValue* entryValue) {
         freeSuperPrimitive ((SuperPrimitive*)entryValue->value);
         break;
     }
-    free(entryValue);
+    free (entryValue);
 }
 
-void createEntryValue(void* value, EntryType type) {
-    EntryValue* entryValue = (EntryValue*)(malloc(sizeof(EntryValue)));
-    entryValue->value = value;
-    entryValue->type = type;
+EntryValue* createEntryValue (void* value, EntryType type) {
+    EntryValue* entryValue = (EntryValue*)(malloc (sizeof (EntryValue)));
+    entryValue->value      = value;
+    entryValue->type       = type;
+    return entryValue;
 }

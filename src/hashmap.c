@@ -2,6 +2,7 @@
 #include "superPrimitive.h"
 #include <assert.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -35,24 +36,17 @@ void freeHashmap (Hashmap* hashmap) {
 
 void freeHashmapEntry (HashmapEntry* entry) {
     assert (entry != NULL);
-    switch (entry->type) {
-    case HASHMAP: freeHashmap ((Hashmap*)entry->value); break;
-    case LIST: break;
-    case SUPER_PRIMITIVE:
-        freeSuperPrimitive ((SuperPrimitive*)entry->value);
-        break;
-    }
+    freeEntryValue ((EntryValue*)entry->value);
     freeSuperPrimitive ((SuperPrimitive*)entry->key);
     free (entry);
 }
 
-void setHashmapEntry (Hashmap* hashmap, SuperPrimitive* key, void* value, EntryType type) {
+void setHashmapEntry (Hashmap* hashmap, SuperPrimitive* key, EntryValue* value) {
     assert (hashmap != NULL);
     assert (key != NULL);
     assert (value != NULL);
     HashmapEntry* entry = (HashmapEntry*)malloc (sizeof (HashmapEntry));
     entry->value        = value;
-    entry->type         = type;
     entry->key          = key;
     entry->next         = NULL;
     entry->originalHash = fnv1 (key);
@@ -100,7 +94,7 @@ int setHashmapEntryWithMask (HashmapEntry** entries, HashmapEntry* entry, uint32
 
     if (previous == NULL) {
         entries[hash] = entry;
-        freeHashmapEntry (runner);
+        freeHashmapEntry (runner); // This is a problem because it yanks variables from under the callers feet
         return 0;
     }
 

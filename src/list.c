@@ -1,5 +1,4 @@
 #include "hashmap.h"
-#include "superPrimitive.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,12 +8,15 @@ List* createList () {
     return list;
 }
 
-void addValueToList (List* list, void* value, EntryType type) {
+void addValueToList (List* list, EntryValue* value) {
+    if (list->value == NULL) {
+        list->value = value;
+        return;
+    }
+
     List* newNode  = (List*)(malloc (sizeof (List)));
     newNode->value = value;
-    newNode->type  = type;
     List* runner   = list;
-
     while (runner->next != NULL) {
         runner = runner->next;
     }
@@ -34,22 +36,16 @@ void printList (List* list, uint32_t spaceAmount) {
     while (runner != NULL) {
         if (!firstValue) {
             printf (",");
+            printf ("\n");
         } else {
             firstValue = 0;
         }
         printSpaces (insideAmount);
-        switch (runner->type) {
-        case LIST: printList ((List*)runner->value, insideAmount); break;
-        case HASHMAP:
-            printHashmap ((Hashmap*)runner->value, insideAmount);
-            break;
-        case SUPER_PRIMITIVE:
-            printSuperPrimitive ((SuperPrimitive*)runner->value);
-            break;
-        }
-        printf ("\n");
+        printEntryValue (runner->value, insideAmount);
         runner = runner->next;
     }
+
+    printf ("\n");
     printSpaces (spaceAmount);
     printf ("]");
 }
@@ -58,13 +54,7 @@ void freeList (List* list) {
     List* runner   = list;
     List* previous = NULL;
     while (runner != NULL) {
-        switch (runner->type) {
-        case LIST: freeList ((List*)runner->value); break;
-        case HASHMAP: freeHashmap ((Hashmap*)runner->value); break;
-        case SUPER_PRIMITIVE:
-            freeSuperPrimitive ((SuperPrimitive*)runner->value);
-            break;
-        }
+        freeEntryValue (runner->value);
         previous = runner;
         runner   = runner->next;
         free (previous);
