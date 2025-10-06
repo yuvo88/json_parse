@@ -46,7 +46,7 @@ void freeHashmapEntry (HashmapEntry* entry) {
     free (entry);
 }
 
-void setHashmapEntry (Hashmap* hashmap, SuperPrimitive* key, void* value, HashmapEntryType type) {
+void setHashmapEntry (Hashmap* hashmap, SuperPrimitive* key, void* value, EntryType type) {
     assert (hashmap != NULL);
     assert (key != NULL);
     assert (value != NULL);
