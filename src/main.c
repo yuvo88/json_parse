@@ -1,12 +1,11 @@
 #include "hashmap.h"
 #include "superPrimitive.h"
+#include <assert.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
 
-int main () {
-    List* list = createList ();
-    addValueToList (list,
-    createEntryValue (createSuperPrimitiveString ("123", 3), SUPER_PRIMITIVE));
-    addValueToList (list, createEntryValue (createSuperPrimitiveInt (1), SUPER_PRIMITIVE));
-    printListln (list);
-
+int main (int argc, const char** argv) {
+    assert (argc == 2);
     return 0;
 }

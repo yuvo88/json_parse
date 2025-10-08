@@ -64,6 +64,7 @@ void printHashmapEntry (HashmapEntry* entry, uint32_t spaceAmount) {
 }
 
 void printEntryValueln (EntryValue* entryValue) {
+    assert (entryValue != NULL);
     printEntryValue (entryValue, 0);
     printf ("\n");
 }
@@ -80,4 +81,33 @@ void printEntryValue (EntryValue* entryValue, uint32_t spaceAmount) {
         break;
     case LIST: printList ((List*)entryValue->value, insideAmount);
     }
+}
+
+void printListln (List* list) {
+    assert (list != NULL);
+    printList (list, 0);
+    printf ("\n");
+}
+void printList (List* list, uint32_t spaceAmount) {
+    assert (list != NULL);
+    uint32_t insideAmount = spaceAmount + 4;
+    int firstValue        = 1;
+    List* runner          = list;
+    printf ("[");
+    printf ("\n");
+    while (runner != NULL) {
+        if (!firstValue) {
+            printf (",");
+            printf ("\n");
+        } else {
+            firstValue = 0;
+        }
+        printSpaces (insideAmount);
+        printEntryValue (runner->value, spaceAmount);
+        runner = runner->next;
+    }
+
+    printf ("\n");
+    printSpaces (spaceAmount);
+    printf ("]");
 }

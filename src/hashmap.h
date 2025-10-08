@@ -42,4 +42,5 @@ void printHashmap (Hashmap* hashmap, uint32_t spaceAmount);
 void printHashmapEntry (HashmapEntry* entry, uint32_t spaceAmount);
 void printList (List* list, uint32_t spaceAmount);
 EntryValue* createEntryValue (void* value, EntryType type);
+void freeList (List* list);
 #endif
