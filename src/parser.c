@@ -42,9 +42,10 @@ List* parseList (ParseState* state) { // TODO: This function leaks memory rn
             addValueToList (list,
             createEntryValue (createSuperPrimitiveBool (*bool), SUPER_PRIMITIVE));
         }
-        assert(IS_COMMA(state->buffer[state->position]) || IS_CLOSED_BRACKET(state->buffer[state->position]));
+        assert (IS_COMMA (state->buffer[state->position]) ||
+        IS_CLOSED_BRACKET (state->buffer[state->position]));
     }
-    assert(IS_CLOSED_BRACKET(state->buffer[state->position - 1])); // TODO: Check if there is a less disgusting way of doing this
+    assert (IS_CLOSED_BRACKET (state->buffer[state->position - 1])); // TODO: Check if there is a less disgusting way of doing this
     return list;
 }
 
