@@ -14,7 +14,7 @@
 #define IS_T(variable) ((int)variable == 116)
 #define IS_F(variable) ((int)variable == 102)
 #define IS_DIGIT(variable) ((int)variable >= 48 && (int)variable <= 57)
-#define STRING_SIZE 500
+#define INITIAL_STRING_SIZE 512
 
 char* parseString (ParseState* state);
 int* parseNumber (ParseState* state);
@@ -30,35 +30,48 @@ List* parseList (ParseState* state) { // TODO: This function leaks memory rn
         if (IS_QUOTES (current)) {
             char* string = parseString (state);
             addValueToList (list,
-            createEntryValue (createSuperPrimitiveString (string, 0), SUPER_PRIMITIVE));
+            createEntryValue (createSuperPrimitiveString (string, strlen(string)), SUPER_PRIMITIVE)); // TODO: Remove strlen
+            assert(IS_COMMA(state->buffer[state->position]) || IS_CLOSED_BRACKET(state->buffer[state->position]));
         }
-        if (IS_DIGIT (current)) {
+        else if (IS_DIGIT (current)) {
             int* number = parseNumber (state);
             addValueToList (list,
             createEntryValue (createSuperPrimitiveInt (*number), SUPER_PRIMITIVE));
+            assert(IS_COMMA(state->buffer[state->position]) || IS_CLOSED_BRACKET(state->buffer[state->position]));
         }
-        if (IS_T (current) || IS_F (current)) {
+        else if (IS_T (current) || IS_F (current)) {
             int* bool = parseBool (state);
             addValueToList (list,
             createEntryValue (createSuperPrimitiveBool (*bool), SUPER_PRIMITIVE));
+            assert(IS_COMMA(state->buffer[state->position]) || IS_CLOSED_BRACKET(state->buffer[state->position]));
         }
-        assert (IS_COMMA (state->buffer[state->position]) ||
-        IS_CLOSED_BRACKET (state->buffer[state->position]));
+        else if (IS_WHITESPACE(current) || IS_NEWLINE(current)) {
+            continue;
+        }
+        else {
+            assert(0);
+        }
     }
-    assert (IS_CLOSED_BRACKET (state->buffer[state->position - 1])); // TODO: Check if there is a less disgusting way of doing this
+    assert (IS_CLOSED_BRACKET (state->buffer[state->position - 1]));
     return list;
 }
 
-char* parseString (ParseState* state) { // TODO: Change the string size to be dynamic
+char* parseString (ParseState* state) {
     assert (IS_QUOTES (state->buffer[state->position]));
-    char* string = (char*)malloc (STRING_SIZE * sizeof (char));
+    char* string = (char*)malloc (INITIAL_STRING_SIZE * sizeof (char));
+    uint32_t stringSize = INITIAL_STRING_SIZE;
     state->position++;
     uint32_t i = 0;
     for (; state->position < strlen (state->buffer) &&
     !IS_QUOTES (state->buffer[state->position]);
-    state->position++) { // TODO: change strlen to be something more robust
+    state->position++) {
+        if (i > stringSize) {
+            stringSize *= 2;
+            string = realloc(string, stringSize * sizeof(char));
+        }
         string[i++] = state->buffer[state->position];
     }
+    string[i] = '\0';
     state->position++;
     return string;
 }
