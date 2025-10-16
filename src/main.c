@@ -10,8 +10,7 @@ int main (int argc, const char** argv) {
     ParseState state = {};
     state.buffer = input;
     state.position = 0;
-    List* list = parseList(&state);
-    printListln (list);
-    freeList(list);
+    Hashmap* hashmap = parseHashmap(&state);
+    printHashmapln(hashmap);
     return 0;
 }

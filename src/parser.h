@@ -8,4 +8,6 @@ typedef struct ParseState {
     uint32_t position;
 }ParseState ;
 List* parseList (ParseState* state);
+HashmapEntry* parseHashmapEntry (ParseState* state);
+Hashmap* parseHashmap (ParseState* state);
 #endif
