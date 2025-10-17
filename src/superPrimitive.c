@@ -60,7 +60,7 @@ void printSuperPrimitive (SuperPrimitive* superPrimitive) {
     switch (superPrimitive->type) {
     case INTEGER: printf ("%d", *(int*)superPrimitive->value); break;
     case STRING: printf ("\"%s\"", (char*)superPrimitive->value); break;
-    case FLOAT: printf ("%f", *(float*)superPrimitive->value); break;
+    case FLOAT: printf ("%.2f", *(float*)superPrimitive->value); break;
     case BOOL:
 
         if (*(uint8_t*)superPrimitive->value) {

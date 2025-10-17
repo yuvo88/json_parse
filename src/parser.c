@@ -18,22 +18,23 @@
 #define IS_NEWLINE(variable) ((int)variable == 10)
 #define IS_T(variable) ((int)variable == 116)
 #define IS_F(variable) ((int)variable == 102)
+#define IS_POINT(variable) ((int)variable == 46)
 #define IS_DIGIT(variable) ((int)variable >= 48 && (int)variable <= 57)
 #define INITIAL_STRING_SIZE 512
 
 char* parseString (ParseState* state);
-int* parseNumber (ParseState* state);
+float* parseNumber (ParseState* state);
 uint8_t* parseBool (ParseState* state);
 
-SuperPrimitive* parserSuperPrimitive (ParseState* state) {
+SuperPrimitive* parseSuperPrimitive (ParseState* state) {
     SuperPrimitive* superPrimitive;
     int current = state->buffer[state->position];
     if (IS_QUOTES (current)) {
         char* string = parseString (state);
         superPrimitive = createSuperPrimitiveString (string, strlen (string)); // TODO: remove strlen
     } else if (IS_DIGIT (current)) {
-        int* number = parseNumber (state);
-        superPrimitive = createSuperPrimitiveInt (*number); // TODO: remove strlen
+        float* number = parseNumber (state);
+        superPrimitive = createSuperPrimitiveFloat (*number); // TODO: remove strlen
     } else if (IS_T (current) || IS_F (current)) {
         uint8_t* boolean = parseBool (state);
         superPrimitive = createSuperPrimitiveBool (*boolean); // TODO: remove strlen
@@ -42,32 +43,55 @@ SuperPrimitive* parserSuperPrimitive (ParseState* state) {
     }
     return superPrimitive;
 }
+EntryValue* parseEntryValue (ParseState* state) {
+    EntryValue* entryValue;
+    int current = state->buffer[state->position];
+    if (IS_QUOTES (current) || IS_DIGIT (current) || IS_T (current) || IS_F (current)) {
+        SuperPrimitive* superPrimitive = parseSuperPrimitive (state);
+        entryValue = createEntryValue (superPrimitive, SUPER_PRIMITIVE);
+    } else if (IS_OPEN_CURLY (current)) {
+        Hashmap* map = parseHashmap (state);
+        entryValue   = createEntryValue (map, HASHMAP);
+    } else if (IS_OPEN_BRACKET (current)) {
+        List* list = parseList (state);
+        entryValue = createEntryValue (list, LIST);
+    } else {
+        assert (0);
+    }
+
+    return entryValue;
+}
 HashmapEntry* parseHashmapEntry (ParseState* state) {
     HashmapEntry* entry = (HashmapEntry*)malloc (sizeof (HashmapEntry));
     SuperPrimitive* key;
-    for (; state->position < strlen (state->buffer) &&
-    !IS_COLON (state->buffer[state->position]);
-    state->position++) {
+    while (state->position < strlen (state->buffer) &&
+    !IS_COLON (state->buffer[state->position])) {
         if (IS_WHITESPACE (state->buffer[state->position]) ||
         IS_NEWLINE (state->buffer[state->position])) {
+            state->position++;
             continue;
         } else {
-            key = parserSuperPrimitive (state);
+            key = parseSuperPrimitive (state);
+            continue;
         }
+        state->position++;
     }
+
     state->position++;
 
     EntryValue* value;
-    for (; state->position < strlen (state->buffer) &&
-    !IS_COMMA (state->buffer[state->position]);
-    state->position++) {
+    while (state->position < strlen (state->buffer) &&
+    !IS_COMMA (state->buffer[state->position]) &&
+    !IS_CLOSED_CURLY (state->buffer[state->position])) {
         if (IS_WHITESPACE (state->buffer[state->position]) ||
         IS_NEWLINE (state->buffer[state->position])) {
+            state->position++;
             continue;
         } else {
-            value = createEntryValue (parserSuperPrimitive (state), SUPER_PRIMITIVE);
-            break;
+            value = parseEntryValue (state);
+            continue;
         }
+        state->position++;
     }
     entry->key   = key;
     entry->value = value;
@@ -78,16 +102,18 @@ Hashmap* parseHashmap (ParseState* state) {
     Hashmap* hashmap = createHashmap ();
     HashmapEntry* entry;
     state->position++;
-    for (; state->position < strlen (state->buffer) &&
-    !IS_CLOSED_CURLY (state->buffer[state->position]);
-    state->position++) {
+    while (state->position < strlen (state->buffer) &&
+    !IS_CLOSED_CURLY (state->buffer[state->position])) {
         if (IS_WHITESPACE (state->buffer[state->position]) ||
         IS_NEWLINE (state->buffer[state->position])) {
+            state->position++;
             continue;
         } else {
             entry = parseHashmapEntry (state);
             setHashmapEntry (hashmap, entry->key, entry->value);
+            continue;
         }
+        state->position++;
     }
     assert (IS_CLOSED_CURLY (state->buffer[state->position]));
     return hashmap;
@@ -95,37 +121,24 @@ Hashmap* parseHashmap (ParseState* state) {
 List* parseList (ParseState* state) { // TODO: This function leaks memory rn
     assert (IS_OPEN_BRACKET (state->buffer[state->position]));
     List* list = createList ();
+    SuperPrimitive* superPrimitive;
     state->position++;
-    for (; state->position < strlen (state->buffer) &&
-    !IS_CLOSED_BRACKET (state->buffer[state->position]);
-    state->position++) { // TODO: doesn't fail on two commas or comma at the beggining
-        int current = state->buffer[state->position];
-        if (IS_QUOTES (current)) {
-            char* string = parseString (state);
-            addValueToList (list,
-            createEntryValue (createSuperPrimitiveString (string, strlen (string)),
-            SUPER_PRIMITIVE)); // TODO: Remove strlen
-            assert (IS_COMMA (state->buffer[state->position]) ||
-            IS_CLOSED_BRACKET (state->buffer[state->position]));
-        } else if (IS_DIGIT (current)) {
-            int* number = parseNumber (state);
-            addValueToList (list,
-            createEntryValue (createSuperPrimitiveInt (*number), SUPER_PRIMITIVE));
-            assert (IS_COMMA (state->buffer[state->position]) ||
-            IS_CLOSED_BRACKET (state->buffer[state->position]));
-        } else if (IS_T (current) || IS_F (current)) {
-            uint8_t* boolean = parseBool (state);
-            addValueToList (list,
-            createEntryValue (createSuperPrimitiveBool (*boolean), SUPER_PRIMITIVE));
-            assert (IS_COMMA (state->buffer[state->position]) ||
-            IS_CLOSED_BRACKET (state->buffer[state->position]));
-        } else if (IS_WHITESPACE (current) || IS_NEWLINE (current)) {
+    while (state->position < strlen (state->buffer) &&
+    !IS_CLOSED_BRACKET (state->buffer[state->position])) { // TODO: doesn't fail on two commas or comma at the beggining
+        if (IS_WHITESPACE (state->buffer[state->position]) ||
+        IS_NEWLINE (state->buffer[state->position])) {
+            state->position++;
+            continue;
+        } else if (IS_COMMA (state->buffer[state->position])) {
+            state->position++;
             continue;
         } else {
-            assert (0);
+            addValueToList (list, parseEntryValue (state));
+            continue;
         }
+        state->position++;
     }
-    assert (IS_CLOSED_BRACKET (state->buffer[state->position - 1]));
+    assert (IS_CLOSED_BRACKET (state->buffer[state->position]));
     return list;
 }
 
@@ -149,15 +162,27 @@ char* parseString (ParseState* state) {
     return string;
 }
 
-int* parseNumber (ParseState* state) {
+float* parseNumber (ParseState* state) {
     assert (IS_DIGIT (state->buffer[state->position]));
-    int* number = (int*)malloc (sizeof (int));
-    *number     = 0;
+    float* number = (float*)malloc (sizeof (float));
+    *number       = 0;
     for (; state->position < strlen (state->buffer) &&
     IS_DIGIT (state->buffer[state->position]);
     state->position++) { // TODO: change strlen to be something more robust
         *number *= 10;
-        *number += (int)state->buffer[state->position] - 48;
+        *number += (float)state->buffer[state->position] - 48;
+    }
+
+    if (IS_POINT (state->buffer[state->position])) {
+        state->position++;
+        float fraction = 0;
+        float division = 10;
+        for (; state->position < strlen (state->buffer) &&
+        IS_DIGIT (state->buffer[state->position]);
+        state->position++) { // TODO: change strlen to be something more robust
+            fraction = (int)state->buffer[state->position] - 48;
+            *number += fraction / division;
+        }
     }
 
     return number;
