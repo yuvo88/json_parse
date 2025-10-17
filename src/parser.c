@@ -22,9 +22,19 @@
 #define IS_DIGIT(variable) ((int)variable >= 48 && (int)variable <= 57)
 #define INITIAL_STRING_SIZE 512
 
+typedef enum IntFloat { INT_NUMBER, FLOAT_NUMBER } IntFloat;
+typedef struct IntFloatReturn {
+    IntFloat type;
+    union {
+        float floatNumber;
+        int intNumber;
+    };
+} IntFloatReturn;
+
 char* parseString (ParseState* state);
-float* parseNumber (ParseState* state);
+IntFloatReturn parseNumber (ParseState* state);
 uint8_t* parseBool (ParseState* state);
+
 
 SuperPrimitive* parseSuperPrimitive (ParseState* state) {
     SuperPrimitive* superPrimitive;
@@ -33,8 +43,15 @@ SuperPrimitive* parseSuperPrimitive (ParseState* state) {
         char* string = parseString (state);
         superPrimitive = createSuperPrimitiveString (string, strlen (string)); // TODO: remove strlen
     } else if (IS_DIGIT (current)) {
-        float* number = parseNumber (state);
-        superPrimitive = createSuperPrimitiveFloat (*number); // TODO: remove strlen
+        IntFloatReturn intFloatReturn = parseNumber (state);
+        switch (intFloatReturn.type) {
+        case INT_NUMBER:
+            superPrimitive = createSuperPrimitiveInt (intFloatReturn.intNumber); // TODO: remove strlen
+            break;
+        case FLOAT_NUMBER:
+            superPrimitive = createSuperPrimitiveFloat (intFloatReturn.floatNumber); // TODO: remove strlen
+            break;
+        }
     } else if (IS_T (current) || IS_F (current)) {
         uint8_t* boolean = parseBool (state);
         superPrimitive = createSuperPrimitiveBool (*boolean); // TODO: remove strlen
@@ -52,9 +69,11 @@ EntryValue* parseEntryValue (ParseState* state) {
     } else if (IS_OPEN_CURLY (current)) {
         Hashmap* map = parseHashmap (state);
         entryValue   = createEntryValue (map, HASHMAP);
+        state->position++;
     } else if (IS_OPEN_BRACKET (current)) {
         List* list = parseList (state);
         entryValue = createEntryValue (list, LIST);
+        state->position++;
     } else {
         assert (0);
     }
@@ -162,15 +181,15 @@ char* parseString (ParseState* state) {
     return string;
 }
 
-float* parseNumber (ParseState* state) {
+IntFloatReturn parseNumber (ParseState* state) {
     assert (IS_DIGIT (state->buffer[state->position]));
-    float* number = (float*)malloc (sizeof (float));
-    *number       = 0;
+    IntFloatReturn intFloatReturn = { .type = INT_NUMBER };
+    float number = 0;
     for (; state->position < strlen (state->buffer) &&
     IS_DIGIT (state->buffer[state->position]);
     state->position++) { // TODO: change strlen to be something more robust
-        *number *= 10;
-        *number += (float)state->buffer[state->position] - 48;
+        number *= 10;
+        number += (float)state->buffer[state->position] - 48;
     }
 
     if (IS_POINT (state->buffer[state->position])) {
@@ -181,11 +200,15 @@ float* parseNumber (ParseState* state) {
         IS_DIGIT (state->buffer[state->position]);
         state->position++) { // TODO: change strlen to be something more robust
             fraction = (int)state->buffer[state->position] - 48;
-            *number += fraction / division;
+            number += fraction / division;
         }
+        intFloatReturn.type = FLOAT_NUMBER;
+        intFloatReturn.floatNumber = (float)number;
+    } else {
+        intFloatReturn.intNumber = (int)number;
     }
 
-    return number;
+    return intFloatReturn;
 }
 
 uint8_t* parseBool (ParseState* state) {

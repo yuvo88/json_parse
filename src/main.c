@@ -3,6 +3,7 @@
 #include "parser.h"
 #include <assert.h>
 #include <stdint.h>
+#include <stdio.h>
 
 int main (int argc, const char** argv) {
     assert (argc == 2);
@@ -10,7 +11,7 @@ int main (int argc, const char** argv) {
     ParseState state = {};
     state.buffer = input;
     state.position = 0;
-    Hashmap* map = parseHashmap(&state);
-    printHashmapln(map);
+    List* list = parseList(&state);
+    printListln(list);
     return 0;
 }
