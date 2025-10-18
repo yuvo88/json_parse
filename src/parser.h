@@ -7,5 +7,5 @@ typedef struct ParseState {
     const char* buffer;
     uint32_t position;
 }ParseState ;
-EntryValue* parseJson(ParseState* state);
+uint32_t parseJson (ParseState* state, EntryValue* parsedReturn);
 #endif
