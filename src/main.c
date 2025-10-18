@@ -11,7 +11,8 @@ int main (int argc, const char** argv) {
     ParseState state = {};
     state.buffer = input;
     state.position = 0;
-    List* list = parseList(&state);
-    printListln(list);
+    EntryValue* value = parseJson(&state);
+    printEntryValue(value, 0);
+    printf("\n");
     return 0;
 }

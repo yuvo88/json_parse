@@ -30,11 +30,25 @@ typedef struct IntFloatReturn {
         int intNumber;
     };
 } IntFloatReturn;
-
+List* parseList (ParseState* state);
+Hashmap* parseHashmap (ParseState* state);
 char* parseString (ParseState* state);
 IntFloatReturn parseNumber (ParseState* state);
 uint8_t* parseBool (ParseState* state);
+SuperPrimitive* parseSuperPrimitive (ParseState* state);
 
+EntryValue* parseJson(ParseState* state) {
+    EntryValue* value;
+    if (IS_OPEN_BRACKET(state->buffer[state->position])) {
+        value = createEntryValue(parseList(state), LIST);
+    } else if (IS_OPEN_CURLY(state->buffer[state->position])) {
+        value = createEntryValue(parseHashmap(state), HASHMAP);
+    } else {
+        value = createEntryValue(parseSuperPrimitive(state), SUPER_PRIMITIVE);
+    }
+
+    return value;
+}
 
 SuperPrimitive* parseSuperPrimitive (ParseState* state) {
     SuperPrimitive* superPrimitive;
@@ -130,11 +144,12 @@ Hashmap* parseHashmap (ParseState* state) {
         } else {
             entry = parseHashmapEntry (state);
             setHashmapEntry (hashmap, entry->key, entry->value);
+            state->position++;
             continue;
         }
         state->position++;
     }
-    assert (IS_CLOSED_CURLY (state->buffer[state->position]));
+    assert (IS_CLOSED_CURLY (state->buffer[state->position - 1]));
     return hashmap;
 }
 List* parseList (ParseState* state) { // TODO: This function leaks memory rn
@@ -148,16 +163,14 @@ List* parseList (ParseState* state) { // TODO: This function leaks memory rn
         IS_NEWLINE (state->buffer[state->position])) {
             state->position++;
             continue;
-        } else if (IS_COMMA (state->buffer[state->position])) {
-            state->position++;
-            continue;
-        } else {
+        }  else {
             addValueToList (list, parseEntryValue (state));
+            state->position++;
             continue;
         }
         state->position++;
     }
-    assert (IS_CLOSED_BRACKET (state->buffer[state->position]));
+    assert (IS_CLOSED_BRACKET (state->buffer[state->position - 1]));
     return list;
 }
 
