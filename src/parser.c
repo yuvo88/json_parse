@@ -19,7 +19,9 @@
 #define IS_T(variable) ((int)variable == 116)
 #define IS_F(variable) ((int)variable == 102)
 #define IS_POINT(variable) ((int)variable == 46)
+#define IS_MINUS(variable) ((int)variable == 45)
 #define IS_DIGIT(variable) ((int)variable >= 48 && (int)variable <= 57)
+#define IS_NUMBER(variable) (IS_MINUS(variable) || IS_DIGIT(variable))
 #define INITIAL_STRING_SIZE 512
 
 typedef enum IntFloat { INT_NUMBER, FLOAT_NUMBER, NUMBER_ERROR } IntFloat;
@@ -38,8 +40,8 @@ uint8_t* parseBool (ParseState* state);
 SuperPrimitive* parseSuperPrimitive (ParseState* state);
 
 uint32_t parseJson (ParseState* state, EntryValue* parsedReturn) {
-    assert(state != NULL);
-    assert(parsedReturn != NULL);
+    assert (state != NULL);
+    assert (parsedReturn != NULL);
     EntryValue* value;
     if (IS_OPEN_BRACKET (state->buffer[state->position])) {
         List* list = parseList (state);
@@ -63,13 +65,13 @@ uint32_t parseJson (ParseState* state, EntryValue* parsedReturn) {
         value = createEntryValue (superPrimitive, SUPER_PRIMITIVE);
     }
     parsedReturn->value = value->value;
-    parsedReturn->type = value->type;
+    parsedReturn->type  = value->type;
 
     return 0;
 }
 
 SuperPrimitive* parseSuperPrimitive (ParseState* state) {
-    assert(state != NULL);
+    assert (state != NULL);
     SuperPrimitive* superPrimitive;
     int current = state->buffer[state->position];
     if (IS_QUOTES (current)) {
@@ -78,7 +80,7 @@ SuperPrimitive* parseSuperPrimitive (ParseState* state) {
             return NULL;
         }
         superPrimitive = createSuperPrimitiveString (string, strlen (string)); // TODO: remove strlen
-    } else if (IS_DIGIT (current)) {
+    } else if (IS_NUMBER(current)) {
         IntFloatReturn intFloatReturn = parseNumber (state);
         switch (intFloatReturn.type) {
         case INT_NUMBER:
@@ -101,10 +103,10 @@ SuperPrimitive* parseSuperPrimitive (ParseState* state) {
     return superPrimitive;
 }
 EntryValue* parseEntryValue (ParseState* state) {
-    assert(state != NULL);
+    assert (state != NULL);
     EntryValue* entryValue;
     int current = state->buffer[state->position];
-    if (IS_QUOTES (current) || IS_DIGIT (current) || IS_T (current) || IS_F (current)) {
+    if (IS_QUOTES (current) || IS_NUMBER (current) || IS_T (current) || IS_F (current)) {
         SuperPrimitive* superPrimitive = parseSuperPrimitive (state);
         if (superPrimitive == NULL) {
             return NULL;
@@ -131,7 +133,7 @@ EntryValue* parseEntryValue (ParseState* state) {
     return entryValue;
 }
 HashmapEntry* parseHashmapEntry (ParseState* state) {
-    assert(state != NULL);
+    assert (state != NULL);
     HashmapEntry* entry = (HashmapEntry*)malloc (sizeof (HashmapEntry));
     SuperPrimitive* key;
     while (state->position < strlen (state->buffer) &&
@@ -174,7 +176,7 @@ HashmapEntry* parseHashmapEntry (ParseState* state) {
     return entry;
 }
 Hashmap* parseHashmap (ParseState* state) {
-    assert(state != NULL);
+    assert (state != NULL);
     if (!IS_OPEN_CURLY (state->buffer[state->position])) {
         return NULL;
     }
@@ -200,7 +202,7 @@ Hashmap* parseHashmap (ParseState* state) {
         }
         state->position++;
     }
-    if (IS_COMMA(state->buffer[state->position - 1])) {
+    if (IS_COMMA (state->buffer[state->position - 1])) {
         return NULL;
     }
     if (!IS_CLOSED_CURLY (state->buffer[state->position])) {
@@ -234,7 +236,7 @@ List* parseList (ParseState* state) { // TODO: This function leaks memory rn
         }
         state->position++;
     }
-    if (IS_COMMA(state->buffer[state->position - 1])) {
+    if (IS_COMMA (state->buffer[state->position - 1])) {
         return NULL;
     }
     if (!IS_CLOSED_BRACKET (state->buffer[state->position])) {
@@ -244,7 +246,7 @@ List* parseList (ParseState* state) { // TODO: This function leaks memory rn
 }
 
 char* parseString (ParseState* state) {
-    assert(state != NULL);
+    assert (state != NULL);
     if (!IS_QUOTES (state->buffer[state->position])) {
         return NULL;
     }
@@ -267,7 +269,12 @@ char* parseString (ParseState* state) {
 }
 
 IntFloatReturn parseNumber (ParseState* state) {
-    assert(state != NULL);
+    assert (state != NULL);
+    int minus_factor = 1;
+    if (IS_MINUS (state->buffer[state->position])) {
+        minus_factor = -1;
+        state->position++;
+    }
     if (!IS_DIGIT (state->buffer[state->position])) {
         IntFloatReturn ret = { .type = NUMBER_ERROR };
         return ret;
@@ -292,16 +299,16 @@ IntFloatReturn parseNumber (ParseState* state) {
             number += fraction / division;
         }
         intFloatReturn.type        = FLOAT_NUMBER;
-        intFloatReturn.floatNumber = (float)number;
+        intFloatReturn.floatNumber = (float)number * minus_factor;
     } else {
-        intFloatReturn.intNumber = (int)number;
+        intFloatReturn.intNumber = (int)number * minus_factor;
     }
 
     return intFloatReturn;
 }
 
 uint8_t* parseBool (ParseState* state) {
-    assert(state != NULL);
+    assert (state != NULL);
     if (!IS_T (state->buffer[state->position]) && !IS_F (state->buffer[state->position])) {
         return NULL;
     }
