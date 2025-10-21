@@ -1,16 +1,20 @@
 #ifndef __read_file_h
 #define __read_file_h
 #include <stdint.h>
+#include <stdio.h>
 typedef struct FileBuffer {
-    int fd;
-    uint32_t position;
-    uint8_t* buffer;
+    FILE* fd;
+    uint32_t absolutePosition;
+    uint32_t cursorPosition;
+    uint32_t bufferSize;
+    uint8_t* byteBuffer;
 } FileBuffer;
 
-FileBuffer* openFile(char* filename);
+FileBuffer* openFile (const char* filename, uint32_t bufferSize);
 void closeFile (FileBuffer* buffer);
 uint32_t addToPosition(FileBuffer* buffer, uint32_t amount);
 uint32_t getPosition(FileBuffer* buffer);
-uint8_t getCurrentValue(FileBuffer* buffer);
+uint8_t getValue (FileBuffer* buffer, uint32_t offset);
+int isEndOfFile(FileBuffer* buffer);
 
 #endif
