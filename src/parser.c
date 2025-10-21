@@ -1,5 +1,6 @@
 #include "parser.h"
 #include "hashmap.h"
+#include "readFile.h"
 #include "superPrimitive.h"
 #include <assert.h>
 #include <stdint.h>
@@ -21,7 +22,7 @@
 #define IS_POINT(variable) ((int)variable == 46)
 #define IS_MINUS(variable) ((int)variable == 45)
 #define IS_DIGIT(variable) ((int)variable >= 48 && (int)variable <= 57)
-#define IS_NUMBER(variable) (IS_MINUS(variable) || IS_DIGIT(variable))
+#define IS_NUMBER(variable) (IS_MINUS (variable) || IS_DIGIT (variable))
 #define INITIAL_STRING_SIZE 512
 
 typedef enum IntFloat { INT_NUMBER, FLOAT_NUMBER, NUMBER_ERROR } IntFloat;
@@ -32,35 +33,35 @@ typedef struct IntFloatReturn {
         int intNumber;
     };
 } IntFloatReturn;
-List* parseList (ParseState* state);
-Hashmap* parseHashmap (ParseState* state);
-char* parseString (ParseState* state);
-IntFloatReturn parseNumber (ParseState* state);
-uint8_t* parseBool (ParseState* state);
-SuperPrimitive* parseSuperPrimitive (ParseState* state);
+List* parseList (FileBuffer* buffer);
+Hashmap* parseHashmap (FileBuffer* buffer);
+char* parseString (FileBuffer* buffer);
+IntFloatReturn parseNumber (FileBuffer* buffer);
+uint8_t* parseBool (FileBuffer* buffer);
+SuperPrimitive* parseSuperPrimitive (FileBuffer* buffer);
 
-uint32_t parseJson (ParseState* state, EntryValue* parsedReturn) {
-    assert (state != NULL);
+uint32_t parseJson (FileBuffer* buffer, EntryValue* parsedReturn) {
+    assert (buffer != NULL);
     assert (parsedReturn != NULL);
     EntryValue* value;
-    if (IS_OPEN_BRACKET (state->buffer[state->position])) {
-        List* list = parseList (state);
+    if (IS_OPEN_BRACKET (getValue (buffer, 0))) {
+        List* list = parseList (buffer);
         if (list == NULL) {
-            return state->position;
+            return getPosition (buffer);
         }
 
         value = createEntryValue (list, LIST);
-    } else if (IS_OPEN_CURLY (state->buffer[state->position])) {
-        Hashmap* map = parseHashmap (state);
+    } else if (IS_OPEN_CURLY (getValue (buffer, 0))) {
+        Hashmap* map = parseHashmap (buffer);
         if (map == NULL) {
-            return state->position;
+            return getPosition (buffer);
         }
 
         value = createEntryValue (map, HASHMAP);
     } else {
-        SuperPrimitive* superPrimitive = parseSuperPrimitive (state);
+        SuperPrimitive* superPrimitive = parseSuperPrimitive (buffer);
         if (superPrimitive == NULL) {
-            return state->position;
+            return getPosition (buffer);
         }
         value = createEntryValue (superPrimitive, SUPER_PRIMITIVE);
     }
@@ -70,232 +71,221 @@ uint32_t parseJson (ParseState* state, EntryValue* parsedReturn) {
     return 0;
 }
 
-SuperPrimitive* parseSuperPrimitive (ParseState* state) {
-    assert (state != NULL);
+SuperPrimitive* parseSuperPrimitive (FileBuffer* buffer) {
+    assert (buffer != NULL);
     SuperPrimitive* superPrimitive;
-    int current = state->buffer[state->position];
+    int current = getValue (buffer, 0);
     if (IS_QUOTES (current)) {
-        char* string = parseString (state);
+        char* string = parseString (buffer);
         if (string == NULL) {
             return NULL;
         }
         superPrimitive = createSuperPrimitiveString (string, strlen (string)); // TODO: remove strlen
-    } else if (IS_NUMBER(current)) {
-        IntFloatReturn intFloatReturn = parseNumber (state);
+    } else if (IS_NUMBER (current)) {
+        IntFloatReturn intFloatReturn = parseNumber (buffer);
         switch (intFloatReturn.type) {
         case INT_NUMBER:
-            superPrimitive = createSuperPrimitiveInt (intFloatReturn.intNumber); // TODO: remove strlen
+            superPrimitive = createSuperPrimitiveInt (intFloatReturn.intNumber);
             break;
         case FLOAT_NUMBER:
-            superPrimitive = createSuperPrimitiveFloat (intFloatReturn.floatNumber); // TODO: remove strlen
+            superPrimitive = createSuperPrimitiveFloat (intFloatReturn.floatNumber);
             break;
         case NUMBER_ERROR: return NULL; break;
         }
     } else if (IS_T (current) || IS_F (current)) {
-        uint8_t* boolean = parseBool (state);
+        uint8_t* boolean = parseBool (buffer);
         if (boolean == NULL) {
             return NULL;
         }
-        superPrimitive = createSuperPrimitiveBool (*boolean); // TODO: remove strlen
+        superPrimitive = createSuperPrimitiveBool (*boolean);
     } else {
         return NULL;
     }
     return superPrimitive;
 }
-EntryValue* parseEntryValue (ParseState* state) {
-    assert (state != NULL);
+EntryValue* parseEntryValue (FileBuffer* buffer) {
+    assert (buffer != NULL);
     EntryValue* entryValue;
-    int current = state->buffer[state->position];
+    int current = getValue (buffer, 0);
     if (IS_QUOTES (current) || IS_NUMBER (current) || IS_T (current) || IS_F (current)) {
-        SuperPrimitive* superPrimitive = parseSuperPrimitive (state);
+        SuperPrimitive* superPrimitive = parseSuperPrimitive (buffer);
         if (superPrimitive == NULL) {
             return NULL;
         }
         entryValue = createEntryValue (superPrimitive, SUPER_PRIMITIVE);
     } else if (IS_OPEN_CURLY (current)) {
-        Hashmap* map = parseHashmap (state);
+        Hashmap* map = parseHashmap (buffer);
         if (map == NULL) {
             return NULL;
         }
         entryValue = createEntryValue (map, HASHMAP);
-        state->position++;
+        addToPosition (buffer, 1);
     } else if (IS_OPEN_BRACKET (current)) {
-        List* list = parseList (state);
+        List* list = parseList (buffer);
         if (list == NULL) {
             return NULL;
         }
         entryValue = createEntryValue (list, LIST);
-        state->position++;
+        addToPosition (buffer, 1);
     } else {
         return NULL;
     }
 
     return entryValue;
 }
-HashmapEntry* parseHashmapEntry (ParseState* state) {
-    assert (state != NULL);
+HashmapEntry* parseHashmapEntry (FileBuffer* buffer) {
+    assert (buffer != NULL);
     HashmapEntry* entry = (HashmapEntry*)malloc (sizeof (HashmapEntry));
     SuperPrimitive* key;
-    while (state->position < strlen (state->buffer) &&
-    !IS_COLON (state->buffer[state->position])) {
-        if (IS_WHITESPACE (state->buffer[state->position]) ||
-        IS_NEWLINE (state->buffer[state->position])) {
-            state->position++;
+    while (!isEndOfFile (buffer) && !IS_COLON (getValue (buffer, 0))) {
+        if (IS_WHITESPACE (getValue (buffer, 0)) || IS_NEWLINE (getValue (buffer, 0))) {
+            addToPosition (buffer, 1);
             continue;
         } else {
-            key = parseSuperPrimitive (state);
+            key = parseSuperPrimitive (buffer);
             if (key == NULL) {
                 return NULL;
             }
             continue;
         }
-        state->position++;
+        addToPosition (buffer, 1);
     }
 
-    state->position++;
+    addToPosition (buffer, 1);
 
     EntryValue* value;
-    while (state->position < strlen (state->buffer) &&
-    !IS_COMMA (state->buffer[state->position]) &&
-    !IS_CLOSED_CURLY (state->buffer[state->position])) {
-        if (IS_WHITESPACE (state->buffer[state->position]) ||
-        IS_NEWLINE (state->buffer[state->position])) {
-            state->position++;
+    while (!isEndOfFile (buffer) && !IS_COMMA (getValue (buffer, 0)) &&
+    !IS_CLOSED_CURLY (getValue (buffer, 0))) {
+        if (IS_WHITESPACE (getValue (buffer, 0)) || IS_NEWLINE (getValue (buffer, 0))) {
+            addToPosition (buffer, 1);
             continue;
         } else {
-            value = parseEntryValue (state);
+            value = parseEntryValue (buffer);
             if (value == NULL) {
                 return NULL;
             }
             continue;
         }
-        state->position++;
+        addToPosition (buffer, 1);
     }
     entry->key   = key;
     entry->value = value;
     return entry;
 }
-Hashmap* parseHashmap (ParseState* state) {
-    assert (state != NULL);
-    if (!IS_OPEN_CURLY (state->buffer[state->position])) {
+Hashmap* parseHashmap (FileBuffer* buffer) {
+    assert (buffer != NULL);
+    if (!IS_OPEN_CURLY (getValue (buffer, 0))) {
         return NULL;
     }
     Hashmap* hashmap = createHashmap ();
     HashmapEntry* entry;
-    state->position++;
-    while (state->position < strlen (state->buffer) &&
-    !IS_CLOSED_CURLY (state->buffer[state->position])) {
-        if (IS_WHITESPACE (state->buffer[state->position]) ||
-        IS_NEWLINE (state->buffer[state->position])) {
-            state->position++;
+    addToPosition (buffer, 1);
+    while (!isEndOfFile (buffer) && !IS_CLOSED_CURLY (getValue (buffer, 0))) {
+        if (IS_WHITESPACE (getValue (buffer, 0)) || IS_NEWLINE (getValue (buffer, 0))) {
+            addToPosition (buffer, 1);
             continue;
         } else {
-            entry = parseHashmapEntry (state);
+            entry = parseHashmapEntry (buffer);
             if (entry == NULL) {
                 return NULL;
             }
             setHashmapEntry (hashmap, entry->key, entry->value);
-            if (IS_COMMA (state->buffer[state->position])) {
-                state->position++;
+            if (IS_COMMA (getValue (buffer, 0))) {
+                addToPosition (buffer, 1);
             }
             continue;
         }
-        state->position++;
+        addToPosition (buffer, 1);
     }
-    if (IS_COMMA (state->buffer[state->position - 1])) {
+    if (IS_COMMA (getValue (buffer, -1))) {
         return NULL;
     }
-    if (!IS_CLOSED_CURLY (state->buffer[state->position])) {
+    if (!IS_CLOSED_CURLY (getValue (buffer, 0))) {
         return NULL;
     }
     return hashmap;
 }
-List* parseList (ParseState* state) { // TODO: This function leaks memory rn
-    if (!IS_OPEN_BRACKET (state->buffer[state->position])) {
+List* parseList (FileBuffer* buffer) { // TODO: This function leaks memory rn
+    if (!IS_OPEN_BRACKET (getValue (buffer, 0))) {
         return NULL;
     }
     List* list = createList ();
     SuperPrimitive* superPrimitive;
-    state->position++;
-    while (state->position < strlen (state->buffer) &&
-    !IS_CLOSED_BRACKET (state->buffer[state->position])) { // TODO: doesn't fail on two commas or comma at the beggining
-        if (IS_WHITESPACE (state->buffer[state->position]) ||
-        IS_NEWLINE (state->buffer[state->position])) {
-            state->position++;
+    addToPosition (buffer, 1);
+    while (!isEndOfFile (buffer) && !IS_CLOSED_BRACKET (getValue (buffer, 0))) {
+        if (IS_WHITESPACE (getValue (buffer, 0)) || IS_NEWLINE (getValue (buffer, 0))) {
+            addToPosition (buffer, 1);
             continue;
         } else {
-            EntryValue* value = parseEntryValue (state);
+            EntryValue* value = parseEntryValue (buffer);
             if (value == NULL) {
                 return NULL;
             }
             addValueToList (list, value);
-            if (IS_COMMA (state->buffer[state->position])) {
-                state->position++;
+            if (IS_COMMA (getValue (buffer, 0))) {
+                addToPosition (buffer, 1);
             }
             continue;
         }
-        state->position++;
+        addToPosition (buffer, 1);
     }
-    if (IS_COMMA (state->buffer[state->position - 1])) {
+    if (IS_COMMA (getValue (buffer, -1))) {
         return NULL;
     }
-    if (!IS_CLOSED_BRACKET (state->buffer[state->position])) {
+    if (!IS_CLOSED_BRACKET (getValue (buffer, 0))) {
         return NULL;
     }
     return list;
 }
 
-char* parseString (ParseState* state) {
-    assert (state != NULL);
-    if (!IS_QUOTES (state->buffer[state->position])) {
+char* parseString (FileBuffer* buffer) {
+    assert (buffer != NULL);
+    if (!IS_QUOTES (getValue (buffer, 0))) {
         return NULL;
     }
     char* string        = (char*)malloc (INITIAL_STRING_SIZE * sizeof (char));
     uint32_t stringSize = INITIAL_STRING_SIZE;
-    state->position++;
+    addToPosition (buffer, 1);
     uint32_t i = 0;
-    for (; state->position < strlen (state->buffer) &&
-    !IS_QUOTES (state->buffer[state->position]);
-    state->position++) {
+    for (; !isEndOfFile (buffer) && !IS_QUOTES (getValue (buffer, 0));
+    addToPosition (buffer, 1)) {
         if (i > stringSize) {
             stringSize *= 2;
             string = realloc (string, stringSize * sizeof (char));
         }
-        string[i++] = state->buffer[state->position];
+        string[i++] = getValue (buffer, 0);
     }
     string[i] = '\0';
-    state->position++;
+    addToPosition (buffer, 1);
     return string;
 }
 
-IntFloatReturn parseNumber (ParseState* state) {
-    assert (state != NULL);
+IntFloatReturn parseNumber (FileBuffer* buffer) {
+    assert (buffer != NULL);
     int minus_factor = 1;
-    if (IS_MINUS (state->buffer[state->position])) {
+    if (IS_MINUS (getValue (buffer, 0))) {
         minus_factor = -1;
-        state->position++;
+        addToPosition (buffer, 1);
     }
-    if (!IS_DIGIT (state->buffer[state->position])) {
+    if (!IS_DIGIT (getValue (buffer, 0))) {
         IntFloatReturn ret = { .type = NUMBER_ERROR };
         return ret;
     }
     IntFloatReturn intFloatReturn = { .type = INT_NUMBER };
     float number                  = 0;
-    for (; state->position < strlen (state->buffer) &&
-    IS_DIGIT (state->buffer[state->position]);
-    state->position++) { // TODO: change strlen to be something more robust
+    for (; !isEndOfFile (buffer) && IS_DIGIT (getValue (buffer, 0));
+    addToPosition (buffer, 1)) {
         number *= 10;
-        number += (float)state->buffer[state->position] - 48;
+        number += (float)getValue (buffer, 0) - 48;
     }
 
-    if (IS_POINT (state->buffer[state->position])) {
-        state->position++;
+    if (IS_POINT (getValue (buffer, 0))) {
+        addToPosition (buffer, 1);
         float fraction = 0;
         float division = 10;
-        for (; state->position < strlen (state->buffer) &&
-        IS_DIGIT (state->buffer[state->position]);
-        state->position++) { // TODO: change strlen to be something more robust
-            fraction = (int)state->buffer[state->position] - 48;
+        for (; !isEndOfFile (buffer) && IS_DIGIT (getValue (buffer, 0));
+        addToPosition (buffer, 1)) {
+            fraction = (int)getValue (buffer, 0) - 48;
             number += fraction / division;
         }
         intFloatReturn.type        = FLOAT_NUMBER;
@@ -307,29 +297,29 @@ IntFloatReturn parseNumber (ParseState* state) {
     return intFloatReturn;
 }
 
-uint8_t* parseBool (ParseState* state) {
-    assert (state != NULL);
-    if (!IS_T (state->buffer[state->position]) && !IS_F (state->buffer[state->position])) {
+uint8_t* parseBool (FileBuffer* buffer) {
+    assert (buffer != NULL);
+    if (!IS_T (getValue (buffer, 0)) && !IS_F (getValue (buffer, 0))) {
         return NULL;
     }
     uint8_t* boolean = (uint8_t*)malloc (sizeof (uint8_t));
-    if (strlen (state->buffer) - state->position < 4) {
+    if (isEndOfFileAmount(buffer, 4)) {
         return NULL;
     }
-    if (state->buffer[state->position] == 't' && state->buffer[state->position + 1] == 'r' &&
-    state->buffer[state->position + 2] == 'u' && state->buffer[state->position + 3] == 'e') {
+    if (getValue (buffer, 0) == 't' && getValue (buffer, 1) == 'r' &&
+    getValue (buffer, 2) == 'u' && getValue (buffer, 3) == 'e') {
         *boolean = 1;
-        state->position += 4;
+        addToPosition (buffer, 4);
         return boolean;
     }
-    if (strlen (state->buffer) - state->position < 5) {
+    if (isEndOfFileAmount(buffer, 5)) {
         return NULL;
     }
-    if (state->buffer[state->position] == 'f' && state->buffer[state->position + 1] == 'a' &&
-    state->buffer[state->position + 2] == 'l' && state->buffer[state->position + 3] == 's' &&
-    state->buffer[state->position + 4] == 'e') {
+    if (getValue (buffer, 0) == 'f' && getValue (buffer, 1) == 'a' &&
+    getValue (buffer, 2) == 'l' && getValue (buffer, 3) == 's' &&
+    getValue (buffer, 4) == 'e') {
         *boolean = 0;
-        state->position += 5;
+        addToPosition (buffer, 5);
         return boolean;
     }
 

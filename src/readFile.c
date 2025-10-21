@@ -10,7 +10,7 @@ FileBuffer* openFile (const char* filename, uint32_t bufferSize) {
     }
 
     uint8_t* byteBuffer = (uint8_t*)(malloc (bufferSize));
-    uint32_t itemsRead   = fread (byteBuffer, 1, bufferSize, fd);
+    uint32_t itemsRead  = fread (byteBuffer, 1, bufferSize, fd);
     if (itemsRead == 0) {
         return NULL;
     }
@@ -51,7 +51,10 @@ uint8_t getValue (FileBuffer* buffer, uint32_t offset) {
 }
 
 int isEndOfFile (FileBuffer* buffer) {
-    if (buffer->absolutePosition >= buffer->cursorPosition &&
+    return isEndOfFileAmount (buffer, 0);
+}
+int isEndOfFileAmount (FileBuffer* buffer, uint32_t amount) {
+    if (buffer->absolutePosition + amount >= buffer->cursorPosition &&
     buffer->cursorPosition % buffer->bufferSize != 0) {
         return 1;
     }

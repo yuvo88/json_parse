@@ -11,8 +11,10 @@ int main (int argc, const char** argv) {
     assert (argc == 2);
     const char* filename = argv[1];
     FileBuffer* buffer = openFile(filename, 4096);
-    for (;!isEndOfFile(buffer); addToPosition(buffer, 1)) {
-        printf("%c", getValue(buffer, 0));
+    EntryValue* value = createEntryValue(NULL, SUPER_PRIMITIVE);
+    uint32_t return_value = parseJson(buffer, value);
+    if (!return_value) {
+        printEntryValue(value, 0);
     }
 
     closeFile(buffer);

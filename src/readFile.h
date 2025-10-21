@@ -16,5 +16,6 @@ uint32_t addToPosition(FileBuffer* buffer, uint32_t amount);
 uint32_t getPosition(FileBuffer* buffer);
 uint8_t getValue (FileBuffer* buffer, uint32_t offset);
 int isEndOfFile(FileBuffer* buffer);
+int isEndOfFileAmount (FileBuffer* buffer, uint32_t amount);
 
 #endif
