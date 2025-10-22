@@ -4,10 +4,11 @@
 void freeEntryValue (EntryValue* entryValue) {
     switch (entryValue->type) {
     case HASHMAP: freeHashmap ((Hashmap*)entryValue->value); break;
-    case LIST: break;
+    case LIST: freeList ((List*)entryValue->value); break;
     case SUPER_PRIMITIVE:
         freeSuperPrimitive ((SuperPrimitive*)entryValue->value);
         break;
+    case NULL_VALUE: break;
     }
     free (entryValue);
 }

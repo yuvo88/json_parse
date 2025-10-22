@@ -3,7 +3,7 @@
 #include "superPrimitive.h"
 #include <stdint.h>
 #define ARRAY_INITIAL_LENGTH 256
-typedef enum EntryType { SUPER_PRIMITIVE, HASHMAP, LIST } EntryType;
+typedef enum EntryType { SUPER_PRIMITIVE, HASHMAP, LIST, NULL_VALUE } EntryType;
 typedef enum HashmapReturnCodes { SUCCESS, KEY_NOT_FOUND } HashmapReturnCodes;
 typedef struct EntryValue {
     void* value;

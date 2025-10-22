@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 int main (int argc, const char** argv) {
     assert (argc == 2);
@@ -14,10 +15,9 @@ int main (int argc, const char** argv) {
     EntryValue* value = createEntryValue(NULL, SUPER_PRIMITIVE);
     uint32_t return_value = parseJson(buffer, value);
     if (!return_value) {
-        printEntryValue(value, 0);
+        printEntryValueln(value);
     }
 
     closeFile(buffer);
-    
     return 0;
 }

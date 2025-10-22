@@ -9,6 +9,7 @@
 #include <string.h>
 
 #define IS_OPEN_BRACKET(variable) ((int)variable == 91)
+#define IS_BACKSLASH(variable) ((int)variable == 92)
 #define IS_CLOSED_BRACKET(variable) ((int)variable == 93)
 #define IS_OPEN_CURLY(variable) ((int)variable == 123)
 #define IS_CLOSED_CURLY(variable) ((int)variable == 125)
@@ -19,6 +20,7 @@
 #define IS_NEWLINE(variable) ((int)variable == 10)
 #define IS_T(variable) ((int)variable == 116)
 #define IS_F(variable) ((int)variable == 102)
+#define IS_N(variable) ((int)variable == 110)
 #define IS_POINT(variable) ((int)variable == 46)
 #define IS_MINUS(variable) ((int)variable == 45)
 #define IS_DIGIT(variable) ((int)variable >= 48 && (int)variable <= 57)
@@ -33,6 +35,7 @@ typedef struct IntFloatReturn {
         int intNumber;
     };
 } IntFloatReturn;
+uint8_t parseNull (FileBuffer* buffer);
 List* parseList (FileBuffer* buffer);
 Hashmap* parseHashmap (FileBuffer* buffer);
 char* parseString (FileBuffer* buffer);
@@ -127,6 +130,12 @@ EntryValue* parseEntryValue (FileBuffer* buffer) {
         }
         entryValue = createEntryValue (list, LIST);
         addToPosition (buffer, 1);
+    } else if (IS_N (current)) {
+        uint32_t retValue = parseNull (buffer);
+        if (retValue == 0) {
+            return NULL;
+        }
+        entryValue = createEntryValue(NULL, NULL_VALUE);
     } else {
         return NULL;
     }
@@ -237,6 +246,26 @@ List* parseList (FileBuffer* buffer) { // TODO: This function leaks memory rn
     }
     return list;
 }
+uint8_t parseStringEscape (FileBuffer* buffer) {
+    assert (buffer != NULL);
+    if (!IS_BACKSLASH (getValue (buffer, 0))) {
+        return 0;
+    }
+    char retChar = ' ';
+    switch (getValue (buffer, 1)) {
+    case '"': retChar = (uint8_t)'"'; break;
+    case '/': retChar = (uint8_t)'/'; break;
+    case 'b': retChar = 8; break;
+    case 'f': retChar = 12; break;
+    case 'n': retChar = 10; break;
+    case 'r': retChar = 13; break;
+    case 't': retChar = 9; break;
+    case '\\': retChar = (uint8_t)'\\'; break;
+    default: return 0; break;
+    }
+    addToPosition (buffer, 2);
+    return retChar;
+}
 
 char* parseString (FileBuffer* buffer) {
     assert (buffer != NULL);
@@ -247,13 +276,21 @@ char* parseString (FileBuffer* buffer) {
     uint32_t stringSize = INITIAL_STRING_SIZE;
     addToPosition (buffer, 1);
     uint32_t i = 0;
-    for (; !isEndOfFile (buffer) && !IS_QUOTES (getValue (buffer, 0));
-    addToPosition (buffer, 1)) {
+    while (!isEndOfFile (buffer) && !IS_QUOTES (getValue (buffer, 0))) {
         if (i > stringSize) {
             stringSize *= 2;
-            string = realloc (string, stringSize * sizeof (char));
+            string = realloc (string, stringSize * sizeof (char)); // TODO: think of something better
+        }
+        if (IS_BACKSLASH (getValue (buffer, 0))) {
+            uint8_t escaped = parseStringEscape (buffer);
+            if (escaped == 0) {
+                return NULL;
+            }
+            string[i++] = (char)escaped;
+            continue;
         }
         string[i++] = getValue (buffer, 0);
+        addToPosition (buffer, 1);
     }
     string[i] = '\0';
     addToPosition (buffer, 1);
@@ -303,7 +340,7 @@ uint8_t* parseBool (FileBuffer* buffer) {
         return NULL;
     }
     uint8_t* boolean = (uint8_t*)malloc (sizeof (uint8_t));
-    if (isEndOfFileAmount(buffer, 4)) {
+    if (isEndOfFileAmount (buffer, 4)) {
         return NULL;
     }
     if (getValue (buffer, 0) == 't' && getValue (buffer, 1) == 'r' &&
@@ -312,7 +349,7 @@ uint8_t* parseBool (FileBuffer* buffer) {
         addToPosition (buffer, 4);
         return boolean;
     }
-    if (isEndOfFileAmount(buffer, 5)) {
+    if (isEndOfFileAmount (buffer, 5)) {
         return NULL;
     }
     if (getValue (buffer, 0) == 'f' && getValue (buffer, 1) == 'a' &&
@@ -324,4 +361,20 @@ uint8_t* parseBool (FileBuffer* buffer) {
     }
 
     return NULL;
+}
+
+uint8_t parseNull (FileBuffer* buffer) {
+    assert (buffer != NULL);
+    if (!IS_N (getValue (buffer, 0))) {
+        return 0;
+    }
+    if (isEndOfFileAmount (buffer, 4)) {
+        return 0;
+    }
+    if (getValue (buffer, 0) == 'n' && getValue (buffer, 1) == 'u' &&
+    getValue (buffer, 2) == 'l' && getValue (buffer, 3) == 'l') {
+        addToPosition (buffer, 4);
+        return 1;
+    }
+    return 0;
 }
