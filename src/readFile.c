@@ -46,7 +46,7 @@ uint32_t getPosition (FileBuffer* buffer) {
     return buffer->absolutePosition;
 }
 
-uint8_t getValue (FileBuffer* buffer, uint32_t offset) {
+uint8_t getValue (FileBuffer* buffer, int64_t offset) {
     return buffer->byteBuffer[(buffer->absolutePosition % buffer->bufferSize) + offset];
 }
 
