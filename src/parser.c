@@ -3,6 +3,7 @@
 #include "readFile.h"
 #include "superPrimitive.h"
 #include <assert.h>
+#include <math.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,28 +20,28 @@
 #define IS_WHITESPACE(variable) ((int)variable == 32)
 #define IS_NEWLINE(variable) ((int)variable == 10)
 #define IS_T(variable) ((int)variable == 116)
+#define IS_U(variable) ((int)variable == 117)
 #define IS_F(variable) ((int)variable == 102)
 #define IS_N(variable) ((int)variable == 110)
 #define IS_POINT(variable) ((int)variable == 46)
 #define IS_MINUS(variable) ((int)variable == 45)
 #define IS_DIGIT(variable) ((int)variable >= 48 && (int)variable <= 57)
+#define IS_HEX_UPPERCASE(variable) ((int)variable >= 65 && (int)variable <= 71)
+#define IS_HEX_LOWERCASE(variable) ((int)variable >= 97 && (int)variable <= 102)
 #define IS_NUMBER(variable) (IS_MINUS (variable) || IS_DIGIT (variable))
 #define INITIAL_STRING_SIZE 512
 
-typedef enum IntFloat { INT_NUMBER, FLOAT_NUMBER, NUMBER_ERROR } IntFloat;
-typedef struct IntFloatReturn {
-    IntFloat type;
-    union {
-        float floatNumber;
-        int intNumber;
-    };
-} IntFloatReturn;
+typedef enum HexParseResultEnum {  PARSE_SUCCESS, PARSE_ERROR } HexParseResultEnum;
+typedef struct  {
+    HexParseResultEnum result;
+    uint16_t value;
+} HexParseResult;
 uint8_t parseNull (FileBuffer* buffer);
 List* parseList (FileBuffer* buffer);
 Hashmap* parseHashmap (FileBuffer* buffer);
-char* parseString (FileBuffer* buffer);
-IntFloatReturn parseNumber (FileBuffer* buffer);
-uint8_t* parseBool (FileBuffer* buffer);
+SuperPrimitive* parseString (FileBuffer* buffer);
+SuperPrimitive* parseNumber (FileBuffer* buffer);
+SuperPrimitive* parseBool (FileBuffer* buffer);
 SuperPrimitive* parseSuperPrimitive (FileBuffer* buffer);
 
 uint32_t parseJson (FileBuffer* buffer, EntryValue* parsedReturn) {
@@ -79,29 +80,15 @@ SuperPrimitive* parseSuperPrimitive (FileBuffer* buffer) {
     SuperPrimitive* superPrimitive;
     int current = getValue (buffer, 0);
     if (IS_QUOTES (current)) {
-        char* string = parseString (buffer);
-        if (string == NULL) {
-            return NULL;
-        }
-        superPrimitive = createSuperPrimitiveString (string, strlen (string)); // TODO: remove strlen
+        superPrimitive = parseString (buffer);
     } else if (IS_NUMBER (current)) {
-        IntFloatReturn intFloatReturn = parseNumber (buffer);
-        switch (intFloatReturn.type) {
-        case INT_NUMBER:
-            superPrimitive = createSuperPrimitiveInt (intFloatReturn.intNumber);
-            break;
-        case FLOAT_NUMBER:
-            superPrimitive = createSuperPrimitiveFloat (intFloatReturn.floatNumber);
-            break;
-        case NUMBER_ERROR: return NULL; break;
-        }
+        superPrimitive = parseNumber (buffer);
     } else if (IS_T (current) || IS_F (current)) {
-        uint8_t* boolean = parseBool (buffer);
-        if (boolean == NULL) {
-            return NULL;
-        }
-        superPrimitive = createSuperPrimitiveBool (*boolean);
+        superPrimitive = parseBool (buffer);
     } else {
+        return NULL;
+    }
+    if (superPrimitive == NULL) {
         return NULL;
     }
     return superPrimitive;
@@ -135,7 +122,7 @@ EntryValue* parseEntryValue (FileBuffer* buffer) {
         if (retValue == 0) {
             return NULL;
         }
-        entryValue = createEntryValue(NULL, NULL_VALUE);
+        entryValue = createEntryValue (NULL, NULL_VALUE);
     } else {
         return NULL;
     }
@@ -266,8 +253,34 @@ uint8_t parseStringEscape (FileBuffer* buffer) {
     addToPosition (buffer, 2);
     return retChar;
 }
+HexParseResult parseStringHexEscape (FileBuffer* buffer) {
+    assert (buffer != NULL);
+    if (!IS_U (getValue (buffer, 0))) {
+        HexParseResult result = {.value=0, .result=PARSE_ERROR};
+        return result;
+    }
+    uint16_t escaped = 0;
+    for (int i = 1; i <= 4; i++) {
+        if (IS_HEX_LOWERCASE (getValue (buffer, i))) {
+            escaped *= 16;
+            escaped += getValue (buffer, i) - 87;
+        } else if (IS_HEX_UPPERCASE (getValue (buffer, i))) {
+            escaped *= 16;
+            escaped += getValue (buffer, i) - 55;
+        } else if (IS_NUMBER (getValue (buffer, i))) {
+            escaped *= 16;
+            escaped += getValue (buffer, i) - 48;
+        } else {
+            HexParseResult result = {.value=0, .result=PARSE_ERROR};
+            return result;
+        }
+    }
+    addToPosition (buffer, 5);
+    HexParseResult result = {.value=escaped, .result=PARSE_SUCCESS};
+    return result;
+}
 
-char* parseString (FileBuffer* buffer) {
+SuperPrimitive* parseString (FileBuffer* buffer) {
     assert (buffer != NULL);
     if (!IS_QUOTES (getValue (buffer, 0))) {
         return NULL;
@@ -282,6 +295,17 @@ char* parseString (FileBuffer* buffer) {
             string = realloc (string, stringSize * sizeof (char)); // TODO: think of something better
         }
         if (IS_BACKSLASH (getValue (buffer, 0))) {
+
+            if (getValue (buffer, 1) == 'u') {
+                addToPosition(buffer, 1);
+                HexParseResult parsedResult = parseStringHexEscape (buffer);
+                if (parsedResult.result == PARSE_ERROR) {
+                    return NULL;
+                }
+                string[i++] = parsedResult.value & 0xff;
+                string[i++] = (parsedResult.value >> 8);
+                continue;
+            }
             uint8_t escaped = parseStringEscape (buffer);
             if (escaped == 0) {
                 return NULL;
@@ -292,12 +316,12 @@ char* parseString (FileBuffer* buffer) {
         string[i++] = getValue (buffer, 0);
         addToPosition (buffer, 1);
     }
-    string[i] = '\0';
     addToPosition (buffer, 1);
-    return string;
+    SuperPrimitive* superPrimitive = createSuperPrimitiveString (string, i);
+    return superPrimitive;
 }
 
-IntFloatReturn parseNumber (FileBuffer* buffer) {
+SuperPrimitive* parseNormalNumber(FileBuffer* buffer) {
     assert (buffer != NULL);
     int minus_factor = 1;
     if (IS_MINUS (getValue (buffer, 0))) {
@@ -305,11 +329,10 @@ IntFloatReturn parseNumber (FileBuffer* buffer) {
         addToPosition (buffer, 1);
     }
     if (!IS_DIGIT (getValue (buffer, 0))) {
-        IntFloatReturn ret = { .type = NUMBER_ERROR };
-        return ret;
+        return NULL;
     }
-    IntFloatReturn intFloatReturn = { .type = INT_NUMBER };
-    float number                  = 0;
+    SuperPrimitive* superPrimitive;
+    float number = 0;
     for (; !isEndOfFile (buffer) && IS_DIGIT (getValue (buffer, 0));
     addToPosition (buffer, 1)) {
         number *= 10;
@@ -325,29 +348,56 @@ IntFloatReturn parseNumber (FileBuffer* buffer) {
             fraction = (int)getValue (buffer, 0) - 48;
             number += fraction / division;
         }
-        intFloatReturn.type        = FLOAT_NUMBER;
-        intFloatReturn.floatNumber = (float)number * minus_factor;
+        superPrimitive = createSuperPrimitiveFloat (number * minus_factor);
     } else {
-        intFloatReturn.intNumber = (int)number * minus_factor;
+        superPrimitive = createSuperPrimitiveInt (number * minus_factor);
     }
 
-    return intFloatReturn;
+    return superPrimitive;
 }
 
-uint8_t* parseBool (FileBuffer* buffer) {
+SuperPrimitive* parseNumber (FileBuffer* buffer) {
+    assert (buffer != NULL);
+    SuperPrimitive* firstNumber = parseNormalNumber(buffer);
+    assert(firstNumber->type == INTEGER || firstNumber->type == FLOAT);
+    if (firstNumber == NULL) {
+        return NULL;
+    }
+
+    if (getValue(buffer, 0) != 'e' && getValue(buffer, 0) != 'E') {
+        return firstNumber;
+    }
+
+    addToPosition(buffer, 1);
+
+    SuperPrimitive* secondNumber = parseNormalNumber(buffer);
+    printf("one: %d, second: %d", *(int*)firstNumber->value, *(int*)secondNumber->value);
+    float first = *(float*)firstNumber->value;
+    float second = *(float*)secondNumber->value;
+    if (firstNumber->type == INTEGER) {
+        first = (float)*(int*)firstNumber->value;
+    }
+    if (secondNumber->type == INTEGER) {
+        second = (float)*(int*)secondNumber->value;
+    }
+    float result = first * powf(10, second);
+    return createSuperPrimitiveFloat(result);
+
+}
+
+SuperPrimitive* parseBool (FileBuffer* buffer) {
     assert (buffer != NULL);
     if (!IS_T (getValue (buffer, 0)) && !IS_F (getValue (buffer, 0))) {
         return NULL;
     }
-    uint8_t* boolean = (uint8_t*)malloc (sizeof (uint8_t));
+    SuperPrimitive* superPrimitive;
     if (isEndOfFileAmount (buffer, 4)) {
         return NULL;
     }
     if (getValue (buffer, 0) == 't' && getValue (buffer, 1) == 'r' &&
     getValue (buffer, 2) == 'u' && getValue (buffer, 3) == 'e') {
-        *boolean = 1;
         addToPosition (buffer, 4);
-        return boolean;
+        return createSuperPrimitiveBool (1);
     }
     if (isEndOfFileAmount (buffer, 5)) {
         return NULL;
@@ -355,9 +405,8 @@ uint8_t* parseBool (FileBuffer* buffer) {
     if (getValue (buffer, 0) == 'f' && getValue (buffer, 1) == 'a' &&
     getValue (buffer, 2) == 'l' && getValue (buffer, 3) == 's' &&
     getValue (buffer, 4) == 'e') {
-        *boolean = 0;
         addToPosition (buffer, 5);
-        return boolean;
+        return createSuperPrimitiveBool (0);
     }
 
     return NULL;

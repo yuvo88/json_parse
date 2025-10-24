@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.8)
 project(json-parse)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-# set(CMAKE_C_FLAGS "-Wall")
+set(CMAKE_C_FLAGS "-lm")
 
 # Change path from /src if needed, or add more directories
 file(GLOB_RECURSE sources

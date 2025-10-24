@@ -59,7 +59,13 @@ void printSuperPrimitive (SuperPrimitive* superPrimitive) {
     assert (superPrimitive != NULL);
     switch (superPrimitive->type) {
     case INTEGER: printf ("%d", *(int*)superPrimitive->value); break;
-    case STRING: printf ("\"%s\"", (char*)superPrimitive->value); break;
+    case STRING:
+        printf ("\"");
+        for (int i = 0; i < superPrimitive->size; i++) {
+            printf ("%c", ((char*)superPrimitive->value)[i]);
+        }
+        printf ("\"");
+        break;
     case FLOAT: printf ("%.2f", *(float*)superPrimitive->value); break;
     case BOOL:
 
