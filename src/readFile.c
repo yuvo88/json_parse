@@ -1,21 +1,22 @@
 #include "readFile.h"
+#include "arena.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-FileBuffer* openFile (const char* filename, uint32_t bufferSize) {
+FileBuffer* openFile (Arena* arena, const char* filename, uint32_t bufferSize) {
     FILE* fd = fopen (filename, "r");
     if (fd == NULL) {
         return NULL;
     }
 
-    uint8_t* byteBuffer = (uint8_t*)(malloc (bufferSize));
+    uint8_t* byteBuffer = (uint8_t*)(arenaMalloc (arena, bufferSize));
     uint32_t itemsRead  = fread (byteBuffer, 1, bufferSize, fd);
     if (itemsRead == 0) {
         return NULL;
     }
 
-    FileBuffer* buffer       = (FileBuffer*)(malloc (sizeof (FileBuffer)));
+    FileBuffer* buffer       = (FileBuffer*)(arenaMalloc (arena, sizeof (FileBuffer)));
     buffer->byteBuffer       = byteBuffer;
     buffer->bufferSize       = bufferSize;
     buffer->fd               = fd;

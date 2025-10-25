@@ -31,43 +31,46 @@
 #define IS_NUMBER(variable) (IS_MINUS (variable) || IS_DIGIT (variable))
 #define INITIAL_STRING_SIZE 512
 
-typedef enum HexParseResultEnum {  PARSE_SUCCESS, PARSE_ERROR } HexParseResultEnum;
-typedef struct  {
+typedef enum HexParseResultEnum {
+    PARSE_SUCCESS,
+    PARSE_ERROR
+} HexParseResultEnum;
+typedef struct {
     HexParseResultEnum result;
     uint16_t value;
 } HexParseResult;
 uint8_t parseNull (FileBuffer* buffer);
-List* parseList (FileBuffer* buffer);
-Hashmap* parseHashmap (FileBuffer* buffer);
-SuperPrimitive* parseString (FileBuffer* buffer);
-SuperPrimitive* parseNumber (FileBuffer* buffer);
-SuperPrimitive* parseBool (FileBuffer* buffer);
-SuperPrimitive* parseSuperPrimitive (FileBuffer* buffer);
+List* parseList (Arena* arena, FileBuffer* buffer);
+Hashmap* parseHashmap (Arena* arena, FileBuffer* buffer);
+SuperPrimitive* parseString (Arena* arena, FileBuffer* buffer);
+SuperPrimitive* parseNumber (Arena* arena, FileBuffer* buffer);
+SuperPrimitive* parseBool (Arena* arena, FileBuffer* buffer);
+SuperPrimitive* parseSuperPrimitive (Arena* arena, FileBuffer* buffer);
 
-uint32_t parseJson (FileBuffer* buffer, EntryValue* parsedReturn) {
+uint32_t parseJson (Arena* arena, FileBuffer* buffer, EntryValue* parsedReturn) {
     assert (buffer != NULL);
     assert (parsedReturn != NULL);
     EntryValue* value;
     if (IS_OPEN_BRACKET (getValue (buffer, 0))) {
-        List* list = parseList (buffer);
+        List* list = parseList (arena, buffer);
         if (list == NULL) {
             return getPosition (buffer);
         }
 
-        value = createEntryValue (list, LIST);
+        value = createEntryValue (arena, list, LIST);
     } else if (IS_OPEN_CURLY (getValue (buffer, 0))) {
-        Hashmap* map = parseHashmap (buffer);
+        Hashmap* map = parseHashmap (arena, buffer);
         if (map == NULL) {
             return getPosition (buffer);
         }
 
-        value = createEntryValue (map, HASHMAP);
+        value = createEntryValue (arena, map, HASHMAP);
     } else {
-        SuperPrimitive* superPrimitive = parseSuperPrimitive (buffer);
+        SuperPrimitive* superPrimitive = parseSuperPrimitive (arena, buffer);
         if (superPrimitive == NULL) {
             return getPosition (buffer);
         }
-        value = createEntryValue (superPrimitive, SUPER_PRIMITIVE);
+        value = createEntryValue (arena, superPrimitive, SUPER_PRIMITIVE);
     }
     parsedReturn->value = value->value;
     parsedReturn->type  = value->type;
@@ -75,16 +78,16 @@ uint32_t parseJson (FileBuffer* buffer, EntryValue* parsedReturn) {
     return 0;
 }
 
-SuperPrimitive* parseSuperPrimitive (FileBuffer* buffer) {
+SuperPrimitive* parseSuperPrimitive (Arena* arena, FileBuffer* buffer) {
     assert (buffer != NULL);
     SuperPrimitive* superPrimitive;
     int current = getValue (buffer, 0);
     if (IS_QUOTES (current)) {
-        superPrimitive = parseString (buffer);
+        superPrimitive = parseString (arena, buffer);
     } else if (IS_NUMBER (current)) {
-        superPrimitive = parseNumber (buffer);
+        superPrimitive = parseNumber (arena, buffer);
     } else if (IS_T (current) || IS_F (current)) {
-        superPrimitive = parseBool (buffer);
+        superPrimitive = parseBool (arena, buffer);
     } else {
         return NULL;
     }
@@ -93,52 +96,52 @@ SuperPrimitive* parseSuperPrimitive (FileBuffer* buffer) {
     }
     return superPrimitive;
 }
-EntryValue* parseEntryValue (FileBuffer* buffer) {
+EntryValue* parseEntryValue (Arena* arena, FileBuffer* buffer) {
     assert (buffer != NULL);
     EntryValue* entryValue;
     int current = getValue (buffer, 0);
     if (IS_QUOTES (current) || IS_NUMBER (current) || IS_T (current) || IS_F (current)) {
-        SuperPrimitive* superPrimitive = parseSuperPrimitive (buffer);
+        SuperPrimitive* superPrimitive = parseSuperPrimitive (arena, buffer);
         if (superPrimitive == NULL) {
             return NULL;
         }
-        entryValue = createEntryValue (superPrimitive, SUPER_PRIMITIVE);
+        entryValue = createEntryValue (arena, superPrimitive, SUPER_PRIMITIVE);
     } else if (IS_OPEN_CURLY (current)) {
-        Hashmap* map = parseHashmap (buffer);
+        Hashmap* map = parseHashmap (arena, buffer);
         if (map == NULL) {
             return NULL;
         }
-        entryValue = createEntryValue (map, HASHMAP);
+        entryValue = createEntryValue (arena, map, HASHMAP);
         addToPosition (buffer, 1);
     } else if (IS_OPEN_BRACKET (current)) {
-        List* list = parseList (buffer);
+        List* list = parseList (arena, buffer);
         if (list == NULL) {
             return NULL;
         }
-        entryValue = createEntryValue (list, LIST);
+        entryValue = createEntryValue (arena, list, LIST);
         addToPosition (buffer, 1);
     } else if (IS_N (current)) {
         uint32_t retValue = parseNull (buffer);
         if (retValue == 0) {
             return NULL;
         }
-        entryValue = createEntryValue (NULL, NULL_VALUE);
+        entryValue = createEntryValue (arena, NULL, NULL_VALUE);
     } else {
         return NULL;
     }
 
     return entryValue;
 }
-HashmapEntry* parseHashmapEntry (FileBuffer* buffer) {
+HashmapEntry* parseHashmapEntry (Arena* arena, FileBuffer* buffer) {
     assert (buffer != NULL);
-    HashmapEntry* entry = (HashmapEntry*)malloc (sizeof (HashmapEntry));
+    HashmapEntry* entry = (HashmapEntry*)arenaMalloc (arena, sizeof (HashmapEntry));
     SuperPrimitive* key;
     while (!isEndOfFile (buffer) && !IS_COLON (getValue (buffer, 0))) {
         if (IS_WHITESPACE (getValue (buffer, 0)) || IS_NEWLINE (getValue (buffer, 0))) {
             addToPosition (buffer, 1);
             continue;
         } else {
-            key = parseSuperPrimitive (buffer);
+            key = parseSuperPrimitive (arena, buffer);
             if (key == NULL) {
                 return NULL;
             }
@@ -156,7 +159,7 @@ HashmapEntry* parseHashmapEntry (FileBuffer* buffer) {
             addToPosition (buffer, 1);
             continue;
         } else {
-            value = parseEntryValue (buffer);
+            value = parseEntryValue (arena, buffer);
             if (value == NULL) {
                 return NULL;
             }
@@ -168,12 +171,12 @@ HashmapEntry* parseHashmapEntry (FileBuffer* buffer) {
     entry->value = value;
     return entry;
 }
-Hashmap* parseHashmap (FileBuffer* buffer) {
+Hashmap* parseHashmap (Arena* arena, FileBuffer* buffer) {
     assert (buffer != NULL);
     if (!IS_OPEN_CURLY (getValue (buffer, 0))) {
         return NULL;
     }
-    Hashmap* hashmap = createHashmap ();
+    Hashmap* hashmap = createHashmap (arena);
     HashmapEntry* entry;
     addToPosition (buffer, 1);
     while (!isEndOfFile (buffer) && !IS_CLOSED_CURLY (getValue (buffer, 0))) {
@@ -181,11 +184,11 @@ Hashmap* parseHashmap (FileBuffer* buffer) {
             addToPosition (buffer, 1);
             continue;
         } else {
-            entry = parseHashmapEntry (buffer);
+            entry = parseHashmapEntry (arena, buffer);
             if (entry == NULL) {
                 return NULL;
             }
-            setHashmapEntry (hashmap, entry->key, entry->value);
+            setHashmapEntry (arena, hashmap, entry->key, entry->value);
             if (IS_COMMA (getValue (buffer, 0))) {
                 addToPosition (buffer, 1);
             }
@@ -201,11 +204,11 @@ Hashmap* parseHashmap (FileBuffer* buffer) {
     }
     return hashmap;
 }
-List* parseList (FileBuffer* buffer) { // TODO: This function leaks memory rn
+List* parseList (Arena* arena, FileBuffer* buffer) { // TODO: This function leaks memory rn
     if (!IS_OPEN_BRACKET (getValue (buffer, 0))) {
         return NULL;
     }
-    List* list = createList ();
+    List* list = createList (arena);
     SuperPrimitive* superPrimitive;
     addToPosition (buffer, 1);
     while (!isEndOfFile (buffer) && !IS_CLOSED_BRACKET (getValue (buffer, 0))) {
@@ -213,11 +216,11 @@ List* parseList (FileBuffer* buffer) { // TODO: This function leaks memory rn
             addToPosition (buffer, 1);
             continue;
         } else {
-            EntryValue* value = parseEntryValue (buffer);
+            EntryValue* value = parseEntryValue (arena, buffer);
             if (value == NULL) {
                 return NULL;
             }
-            addValueToList (list, value);
+            addValueToList (arena, list, value);
             if (IS_COMMA (getValue (buffer, 0))) {
                 addToPosition (buffer, 1);
             }
@@ -256,7 +259,7 @@ uint8_t parseStringEscape (FileBuffer* buffer) {
 HexParseResult parseStringHexEscape (FileBuffer* buffer) {
     assert (buffer != NULL);
     if (!IS_U (getValue (buffer, 0))) {
-        HexParseResult result = {.value=0, .result=PARSE_ERROR};
+        HexParseResult result = { .value = 0, .result = PARSE_ERROR };
         return result;
     }
     uint16_t escaped = 0;
@@ -271,21 +274,21 @@ HexParseResult parseStringHexEscape (FileBuffer* buffer) {
             escaped *= 16;
             escaped += getValue (buffer, i) - 48;
         } else {
-            HexParseResult result = {.value=0, .result=PARSE_ERROR};
+            HexParseResult result = { .value = 0, .result = PARSE_ERROR };
             return result;
         }
     }
     addToPosition (buffer, 5);
-    HexParseResult result = {.value=escaped, .result=PARSE_SUCCESS};
+    HexParseResult result = { .value = escaped, .result = PARSE_SUCCESS };
     return result;
 }
 
-SuperPrimitive* parseString (FileBuffer* buffer) {
+SuperPrimitive* parseString (Arena* arena, FileBuffer* buffer) {
     assert (buffer != NULL);
     if (!IS_QUOTES (getValue (buffer, 0))) {
         return NULL;
     }
-    char* string        = (char*)malloc (INITIAL_STRING_SIZE * sizeof (char));
+    char* string = (char*)arenaMalloc (arena, INITIAL_STRING_SIZE * sizeof (char));
     uint32_t stringSize = INITIAL_STRING_SIZE;
     addToPosition (buffer, 1);
     uint32_t i = 0;
@@ -297,7 +300,7 @@ SuperPrimitive* parseString (FileBuffer* buffer) {
         if (IS_BACKSLASH (getValue (buffer, 0))) {
 
             if (getValue (buffer, 1) == 'u') {
-                addToPosition(buffer, 1);
+                addToPosition (buffer, 1);
                 HexParseResult parsedResult = parseStringHexEscape (buffer);
                 if (parsedResult.result == PARSE_ERROR) {
                     return NULL;
@@ -317,11 +320,11 @@ SuperPrimitive* parseString (FileBuffer* buffer) {
         addToPosition (buffer, 1);
     }
     addToPosition (buffer, 1);
-    SuperPrimitive* superPrimitive = createSuperPrimitiveString (string, i);
+    SuperPrimitive* superPrimitive = createSuperPrimitiveString (arena, string, i);
     return superPrimitive;
 }
 
-SuperPrimitive* parseNormalNumber(FileBuffer* buffer) {
+SuperPrimitive* parseNormalNumber (Arena* arena, FileBuffer* buffer) {
     assert (buffer != NULL);
     int minus_factor = 1;
     if (IS_MINUS (getValue (buffer, 0))) {
@@ -348,31 +351,32 @@ SuperPrimitive* parseNormalNumber(FileBuffer* buffer) {
             fraction = (int)getValue (buffer, 0) - 48;
             number += fraction / division;
         }
-        superPrimitive = createSuperPrimitiveFloat (number * minus_factor);
+        superPrimitive = createSuperPrimitiveFloat (arena, number * minus_factor);
     } else {
-        superPrimitive = createSuperPrimitiveInt (number * minus_factor);
+        superPrimitive = createSuperPrimitiveInt (arena, number * minus_factor);
     }
 
     return superPrimitive;
 }
 
-SuperPrimitive* parseNumber (FileBuffer* buffer) {
+SuperPrimitive* parseNumber (Arena* arena, FileBuffer* buffer) {
     assert (buffer != NULL);
-    SuperPrimitive* firstNumber = parseNormalNumber(buffer);
-    assert(firstNumber->type == INTEGER || firstNumber->type == FLOAT);
+    SuperPrimitive* firstNumber = parseNormalNumber (arena, buffer);
+    assert (firstNumber->type == INTEGER || firstNumber->type == FLOAT);
     if (firstNumber == NULL) {
         return NULL;
     }
 
-    if (getValue(buffer, 0) != 'e' && getValue(buffer, 0) != 'E') {
+    if (getValue (buffer, 0) != 'e' && getValue (buffer, 0) != 'E') {
         return firstNumber;
     }
 
-    addToPosition(buffer, 1);
+    addToPosition (buffer, 1);
 
-    SuperPrimitive* secondNumber = parseNormalNumber(buffer);
-    printf("one: %d, second: %d", *(int*)firstNumber->value, *(int*)secondNumber->value);
-    float first = *(float*)firstNumber->value;
+    SuperPrimitive* secondNumber = parseNormalNumber (arena, buffer);
+    printf ("one: %d, second: %d", *(int*)firstNumber->value,
+    *(int*)secondNumber->value);
+    float first  = *(float*)firstNumber->value;
     float second = *(float*)secondNumber->value;
     if (firstNumber->type == INTEGER) {
         first = (float)*(int*)firstNumber->value;
@@ -380,12 +384,11 @@ SuperPrimitive* parseNumber (FileBuffer* buffer) {
     if (secondNumber->type == INTEGER) {
         second = (float)*(int*)secondNumber->value;
     }
-    float result = first * powf(10, second);
-    return createSuperPrimitiveFloat(result);
-
+    float result = first * powf (10, second);
+    return createSuperPrimitiveFloat (arena, result);
 }
 
-SuperPrimitive* parseBool (FileBuffer* buffer) {
+SuperPrimitive* parseBool (Arena* arena, FileBuffer* buffer) {
     assert (buffer != NULL);
     if (!IS_T (getValue (buffer, 0)) && !IS_F (getValue (buffer, 0))) {
         return NULL;
@@ -397,7 +400,7 @@ SuperPrimitive* parseBool (FileBuffer* buffer) {
     if (getValue (buffer, 0) == 't' && getValue (buffer, 1) == 'r' &&
     getValue (buffer, 2) == 'u' && getValue (buffer, 3) == 'e') {
         addToPosition (buffer, 4);
-        return createSuperPrimitiveBool (1);
+        return createSuperPrimitiveBool (arena, 1);
     }
     if (isEndOfFileAmount (buffer, 5)) {
         return NULL;
@@ -406,7 +409,7 @@ SuperPrimitive* parseBool (FileBuffer* buffer) {
     getValue (buffer, 2) == 'l' && getValue (buffer, 3) == 's' &&
     getValue (buffer, 4) == 'e') {
         addToPosition (buffer, 5);
-        return createSuperPrimitiveBool (0);
+        return createSuperPrimitiveBool (arena, 0);
     }
 
     return NULL;

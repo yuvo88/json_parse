@@ -1,3 +1,4 @@
+#include "arena.h"
 #include "hashmap.h"
 #include <stdlib.h>
 
@@ -13,8 +14,8 @@ void freeEntryValue (EntryValue* entryValue) {
     free (entryValue);
 }
 
-EntryValue* createEntryValue (void* value, EntryType type) {
-    EntryValue* entryValue = (EntryValue*)(malloc (sizeof (EntryValue)));
+EntryValue* createEntryValue (Arena* arena, void* value, EntryType type) {
+    EntryValue* entryValue = (EntryValue*)(arenaMalloc (arena, sizeof (EntryValue)));
     entryValue->value      = value;
     entryValue->type       = type;
     return entryValue;

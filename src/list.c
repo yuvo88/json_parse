@@ -1,14 +1,16 @@
+#include "arena.h"
 #include "hashmap.h"
 #include <assert.h>
 #include <stdint.h>
 #include <stdlib.h>
 
-List* createList () {
-    List* list = (List*)(malloc (sizeof (List)));
+List* createList (Arena* arena) {
+    List* list = (List*)(arenaMalloc (arena, sizeof (List)));
     return list;
 }
 
-void addValueToList (List* list, EntryValue* value) {
+void addValueToList (Arena* arena, List* list, EntryValue* value) {
+    assert(arena != NULL);
     assert (list != NULL);
     assert (value != NULL);
     if (list->value == NULL) {
@@ -16,7 +18,7 @@ void addValueToList (List* list, EntryValue* value) {
         return;
     }
 
-    List* newNode  = (List*)(malloc (sizeof (List)));
+    List* newNode  = (List*)(arenaMalloc (arena,sizeof (List)));
     newNode->value = value;
     List* runner   = list;
     while (runner->next != NULL) {

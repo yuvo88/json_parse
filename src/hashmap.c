@@ -1,4 +1,5 @@
 #include "hashmap.h"
+#include "arena.h"
 #include "superPrimitive.h"
 #include <assert.h>
 #include <stdint.h>
@@ -6,15 +7,15 @@
 #include <string.h>
 
 void freeHashmapEntry (HashmapEntry* entry);
-void expandEntryArray (Hashmap* hashmap);
+void expandEntryArray (Arena* arena, Hashmap* hashmap);
 int setHashmapEntryWithMask (HashmapEntry** entries, HashmapEntry* entry, uint32_t mask
 
 );
 
-Hashmap* createHashmap () {
+Hashmap* createHashmap (Arena* arena) {
     HashmapEntry** entries =
-    (HashmapEntry**)(calloc (ARRAY_INITIAL_LENGTH, sizeof (HashmapEntry*)));
-    Hashmap* hashmap = (Hashmap*)(malloc (sizeof (Hashmap)));
+    (HashmapEntry**)(arenaCalloc (arena, sizeof (HashmapEntry*) * ARRAY_INITIAL_LENGTH));
+    Hashmap* hashmap = (Hashmap*)(arenaMalloc (arena, sizeof (Hashmap)));
     hashmap->length  = ARRAY_INITIAL_LENGTH;
     hashmap->entries = entries;
     return hashmap;
@@ -38,11 +39,11 @@ void freeHashmapEntry (HashmapEntry* entry) {
     free (entry);
 }
 
-void setHashmapEntry (Hashmap* hashmap, SuperPrimitive* key, EntryValue* value) {
+void setHashmapEntry (Arena* arena, Hashmap* hashmap, SuperPrimitive* key, EntryValue* value) {
     assert (hashmap != NULL);
     assert (key != NULL);
     assert (value != NULL);
-    HashmapEntry* entry = (HashmapEntry*)malloc (sizeof (HashmapEntry));
+    HashmapEntry* entry = (HashmapEntry*)arenaMalloc (arena, sizeof (HashmapEntry));
     entry->value        = value;
     entry->key          = key;
     entry->next         = NULL;
@@ -50,7 +51,7 @@ void setHashmapEntry (Hashmap* hashmap, SuperPrimitive* key, EntryValue* value) 
     int nextListLegnth =
     setHashmapEntryWithMask (hashmap->entries, entry, hashmap->length - 1);
     if (nextListLegnth >= 3) {
-        expandEntryArray (hashmap);
+        expandEntryArray (arena, hashmap);
     }
 }
 
@@ -162,11 +163,11 @@ getValueByKey (Hashmap* hashmap, SuperPrimitive* key, HashmapEntry* returnValue)
     return SUCCESS;
 }
 
-void expandEntryArray (Hashmap* hashmap) {
+void expandEntryArray (Arena* arena, Hashmap* hashmap) {
     assert (hashmap != NULL);
     uint32_t newLength = hashmap->length * 2;
     HashmapEntry** entries =
-    (HashmapEntry**)(calloc (newLength, sizeof (HashmapEntry*)));
+    (HashmapEntry**)(arenaCalloc (arena, sizeof (HashmapEntry*) * newLength));
     for (uint32_t i = 0; i < hashmap->length; i++) {
         HashmapEntry* entry = hashmap->entries[i];
 
@@ -185,7 +186,7 @@ void expandEntryArray (Hashmap* hashmap) {
         }
     }
 
-    free (hashmap->entries);
+    freeArenaItem (arena, hashmap->entries, sizeof (HashmapEntry*) * hashmap->length);
     hashmap->entries = entries;
     hashmap->length  = newLength;
 }

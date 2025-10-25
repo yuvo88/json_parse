@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
-SuperPrimitive* createSuperPrimitive (void* value, uint32_t size, SuperPrimitiveType type);
+SuperPrimitive* createSuperPrimitive (Arena* arena,void* value, uint32_t size, SuperPrimitiveType type);
 uint32_t fnv1 (SuperPrimitive* superPrimitive) {
     assert (superPrimitive != NULL);
     assert (superPrimitive->type != BOOL);
@@ -18,37 +18,37 @@ uint32_t fnv1 (SuperPrimitive* superPrimitive) {
     return hash;
 }
 
-SuperPrimitive* createSuperPrimitiveInt (int value) {
-    int* valuePointer = malloc (sizeof (int));
+SuperPrimitive* createSuperPrimitiveInt (Arena* arena, int value) {
+    int* valuePointer = arenaMalloc (arena, sizeof (int));
     *valuePointer     = value;
-    return createSuperPrimitive ((void*)valuePointer, sizeof (int), INTEGER);
+    return createSuperPrimitive (arena, (void*)valuePointer, sizeof (int), INTEGER);
 }
-SuperPrimitive* createSuperPrimitiveFloat (float value) {
-    float* valuePointer = malloc (sizeof (float));
+SuperPrimitive* createSuperPrimitiveFloat (Arena* arena, float value) {
+    float* valuePointer = arenaMalloc (arena, sizeof (float));
     *valuePointer       = value;
-    return createSuperPrimitive ((void*)valuePointer, sizeof (float), FLOAT);
+    return createSuperPrimitive (arena, (void*)valuePointer, sizeof (float), FLOAT);
 }
 
-SuperPrimitive* createSuperPrimitiveChar (char value) {
-    char* valuePointer = malloc (sizeof (char));
+SuperPrimitive* createSuperPrimitiveChar (Arena* arena, char value) {
+    char* valuePointer = arenaMalloc (arena, sizeof (char));
     *valuePointer      = value;
-    return createSuperPrimitive ((void*)valuePointer, sizeof (char), CHAR);
+    return createSuperPrimitive (arena, (void*)valuePointer, sizeof (char), CHAR);
 }
-SuperPrimitive* createSuperPrimitiveBool (uint8_t value) {
-    uint8_t* valuePointer = malloc (sizeof (uint8_t));
+SuperPrimitive* createSuperPrimitiveBool (Arena* arena, uint8_t value) {
+    uint8_t* valuePointer = arenaMalloc (arena, sizeof (uint8_t));
     *valuePointer         = value;
-    return createSuperPrimitive ((void*)valuePointer, sizeof (uint8_t), BOOL);
+    return createSuperPrimitive (arena, (void*)valuePointer, sizeof (uint8_t), BOOL);
 }
-SuperPrimitive* createSuperPrimitiveString (const char* value, uint32_t length) {
+SuperPrimitive* createSuperPrimitiveString (Arena* arena, const char* value, uint32_t length) {
     assert (value != NULL);
-    char* valuePointer = malloc (length * sizeof (char));
+    char* valuePointer = arenaMalloc (arena, length * sizeof (char));
     strcpy (valuePointer, value);
-    return createSuperPrimitive ((void*)valuePointer, sizeof (char) * length, STRING);
+    return createSuperPrimitive (arena, (void*)valuePointer, sizeof (char) * length, STRING);
 }
 
-SuperPrimitive* createSuperPrimitive (void* value, uint32_t size, SuperPrimitiveType type) {
+SuperPrimitive* createSuperPrimitive (Arena* arena, void* value, uint32_t size, SuperPrimitiveType type) {
     assert (value != NULL);
-    SuperPrimitive* superPrimitive = malloc (sizeof (SuperPrimitive));
+    SuperPrimitive* superPrimitive = arenaMalloc (arena, sizeof (SuperPrimitive));
     superPrimitive->value          = value;
     superPrimitive->size           = size;
     superPrimitive->type           = type;
