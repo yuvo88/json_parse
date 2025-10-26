@@ -33,18 +33,17 @@ void destroyArena (Arena* arena) {
     free (arena->memory);
     free (arena);
 }
-void* arenaRealloc(Arena* arena, void* pointer, uint64_t oldSize, uint64_t newSize) {
-    void* newPointer = arenaMalloc(arena, newSize);
-    memcpy(newPointer, pointer, oldSize);
-    freeArenaItem(arena, pointer, oldSize);
+void* arenaRealloc (Arena* arena, void* pointer, uint64_t oldSize, uint64_t newSize) {
+    void* newPointer = arenaMalloc (arena, newSize);
+    memcpy (newPointer, pointer, oldSize);
+    freeArenaItem (arena, pointer, oldSize);
 
     return newPointer;
 }
-void* arenaCalloc(Arena* arena, uint64_t size) {
-    void* pointer = (uint8_t*)arenaMalloc(arena, size);
-    memset(pointer, 0, size);
+void* arenaCalloc (Arena* arena, uint64_t size) {
+    void* pointer = (uint8_t*)arenaMalloc (arena, size);
+    memset (pointer, 0, size);
     return pointer;
-    
 }
 void* arenaMalloc (Arena* arena, uint64_t size) {
     assert (arena != NULL);

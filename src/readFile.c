@@ -16,7 +16,7 @@ FileBuffer* openFile (Arena* arena, const char* filename, uint32_t bufferSize) {
         return NULL;
     }
 
-    FileBuffer* buffer       = (FileBuffer*)(arenaMalloc (arena, sizeof (FileBuffer)));
+    FileBuffer* buffer = (FileBuffer*)(arenaMalloc (arena, sizeof (FileBuffer)));
     buffer->byteBuffer       = byteBuffer;
     buffer->bufferSize       = bufferSize;
     buffer->fd               = fd;

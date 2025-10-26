@@ -375,8 +375,8 @@ SuperPrimitive* parseNumber (Arena* arena, FileBuffer* buffer) {
     addToPosition (buffer, 1);
 
     SuperPrimitive* secondNumber = parseNormalNumber (arena, buffer);
-    float first  = *(float*)firstNumber->value;
-    float second = *(float*)secondNumber->value;
+    float first                  = *(float*)firstNumber->value;
+    float second                 = *(float*)secondNumber->value;
     if (firstNumber->type == INTEGER) {
         first = (float)*(int*)firstNumber->value;
     }

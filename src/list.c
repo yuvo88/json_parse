@@ -10,7 +10,7 @@ List* createList (Arena* arena) {
 }
 
 void addValueToList (Arena* arena, List* list, EntryValue* value) {
-    assert(arena != NULL);
+    assert (arena != NULL);
     assert (list != NULL);
     assert (value != NULL);
     if (list->value == NULL) {
@@ -18,7 +18,7 @@ void addValueToList (Arena* arena, List* list, EntryValue* value) {
         return;
     }
 
-    List* newNode  = (List*)(arenaCalloc (arena,sizeof (List)));
+    List* newNode  = (List*)(arenaCalloc (arena, sizeof (List)));
     newNode->value = value;
     List* runner   = list;
     while (runner->next != NULL) {

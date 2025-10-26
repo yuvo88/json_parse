@@ -16,7 +16,7 @@ void freeEntryValue (EntryValue* entryValue) {
 
 EntryValue* createEntryValue (Arena* arena, void* value, EntryType type) {
     EntryValue* entryValue = (EntryValue*)(arenaMalloc (arena, sizeof (EntryValue)));
-    entryValue->value      = value;
-    entryValue->type       = type;
+    entryValue->value = value;
+    entryValue->type  = type;
     return entryValue;
 }

@@ -5,7 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
-SuperPrimitive* createSuperPrimitive (Arena* arena,void* value, uint32_t size, SuperPrimitiveType type);
+SuperPrimitive*
+createSuperPrimitive (Arena* arena, void* value, uint32_t size, SuperPrimitiveType type);
 uint32_t fnv1 (SuperPrimitive* superPrimitive) {
     assert (superPrimitive != NULL);
     assert (superPrimitive->type != BOOL);
@@ -46,12 +47,13 @@ SuperPrimitive* createSuperPrimitiveString (Arena* arena, const char* value, uin
     return createSuperPrimitive (arena, (void*)valuePointer, sizeof (char) * length, STRING);
 }
 
-SuperPrimitive* createSuperPrimitive (Arena* arena, void* value, uint32_t size, SuperPrimitiveType type) {
+SuperPrimitive*
+createSuperPrimitive (Arena* arena, void* value, uint32_t size, SuperPrimitiveType type) {
     assert (value != NULL);
     SuperPrimitive* superPrimitive = arenaMalloc (arena, sizeof (SuperPrimitive));
-    superPrimitive->value          = value;
-    superPrimitive->size           = size;
-    superPrimitive->type           = type;
+    superPrimitive->value = value;
+    superPrimitive->size  = size;
+    superPrimitive->type  = type;
     return superPrimitive;
 }
 

@@ -1,7 +1,7 @@
 #ifndef __hashmap_h
 #define __hashmap_h
-#include "superPrimitive.h"
 #include "arena.h"
+#include "superPrimitive.h"
 #include <stdint.h>
 #define ARRAY_INITIAL_LENGTH 256
 typedef enum EntryType { SUPER_PRIMITIVE, HASHMAP, LIST, NULL_VALUE } EntryType;

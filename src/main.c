@@ -5,7 +5,6 @@
 #include "readFile.h"
 #include <assert.h>
 #include <stdint.h>
-#include <string.h>
 #include <unistd.h>
 #define GET_KB(size) ((uint64_t)(size * 1024))
 #define GET_MB(size) ((uint64_t)(GET_KB (size) * 1024))
