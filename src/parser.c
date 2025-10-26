@@ -7,7 +7,6 @@
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #define IS_OPEN_BRACKET(variable) ((int)variable == 91)
@@ -180,24 +179,30 @@ Hashmap* parseHashmap (Arena* arena, FileBuffer* buffer) {
     Hashmap* hashmap = createHashmap (arena);
     HashmapEntry* entry;
     addToPosition (buffer, 1);
+    int wasComma = 1;
     while (!isEndOfFile (buffer) && !IS_CLOSED_CURLY (getValue (buffer, 0))) {
         if (IS_WHITESPACE (getValue (buffer, 0)) || IS_NEWLINE (getValue (buffer, 0))) {
             addToPosition (buffer, 1);
-            continue;
-        } else {
+        } else if(IS_COMMA(getValue(buffer, 0))) {
+            if (wasComma) {
+                return NULL;
+            }
+            wasComma = 1;
+            addToPosition (buffer, 1);
+        }
+        else {
             entry = parseHashmapEntry (arena, buffer);
             if (entry == NULL) {
                 return NULL;
             }
             setHashmapEntry (arena, hashmap, entry->key, entry->value);
-            if (IS_COMMA (getValue (buffer, 0))) {
-                addToPosition (buffer, 1);
+            if (!wasComma) {
+                return NULL;
             }
-            continue;
+            wasComma = 0;
         }
-        addToPosition (buffer, 1);
     }
-    if (IS_COMMA (getValue (buffer, -1))) {
+    if (wasComma) {
         return NULL;
     }
     if (!IS_CLOSED_CURLY (getValue (buffer, 0))) {
@@ -205,31 +210,35 @@ Hashmap* parseHashmap (Arena* arena, FileBuffer* buffer) {
     }
     return hashmap;
 }
-List* parseList (Arena* arena, FileBuffer* buffer) { // TODO: This function leaks memory rn
+List* parseList (Arena* arena, FileBuffer* buffer) {
     if (!IS_OPEN_BRACKET (getValue (buffer, 0))) {
         return NULL;
     }
     List* list = createList (arena);
-    SuperPrimitive* superPrimitive;
     addToPosition (buffer, 1);
+    int wasComma = 1;
     while (!isEndOfFile (buffer) && !IS_CLOSED_BRACKET (getValue (buffer, 0))) {
         if (IS_WHITESPACE (getValue (buffer, 0)) || IS_NEWLINE (getValue (buffer, 0))) {
             addToPosition (buffer, 1);
-            continue;
+        } else if (IS_COMMA (getValue (buffer, 0))) {
+            if (wasComma) {
+                return NULL;
+            }
+            wasComma = 1;
+            addToPosition (buffer, 1);
         } else {
             EntryValue* value = parseEntryValue (arena, buffer);
             if (value == NULL) {
                 return NULL;
             }
             addValueToList (arena, list, value);
-            if (IS_COMMA (getValue (buffer, 0))) {
-                addToPosition (buffer, 1);
+            if (!wasComma) {
+                return NULL;
             }
-            continue;
+            wasComma = 0;
         }
-        addToPosition (buffer, 1);
     }
-    if (IS_COMMA (getValue (buffer, -1))) {
+    if (wasComma) {
         return NULL;
     }
     if (!IS_CLOSED_BRACKET (getValue (buffer, 0))) {
@@ -392,21 +401,17 @@ SuperPrimitive* parseBool (Arena* arena, FileBuffer* buffer) {
     if (!IS_T (getValue (buffer, 0)) && !IS_F (getValue (buffer, 0))) {
         return NULL;
     }
-    SuperPrimitive* superPrimitive;
     if (isEndOfFileAmount (buffer, 4)) {
         return NULL;
     }
-    if (getValue (buffer, 0) == 't' && getValue (buffer, 1) == 'r' &&
-    getValue (buffer, 2) == 'u' && getValue (buffer, 3) == 'e') {
+    if (memcmp (getPointer (buffer, 0), "true", 4) == 0) {
         addToPosition (buffer, 4);
         return createSuperPrimitiveBool (arena, 1);
     }
     if (isEndOfFileAmount (buffer, 5)) {
         return NULL;
     }
-    if (getValue (buffer, 0) == 'f' && getValue (buffer, 1) == 'a' &&
-    getValue (buffer, 2) == 'l' && getValue (buffer, 3) == 's' &&
-    getValue (buffer, 4) == 'e') {
+    if (memcmp (getPointer (buffer, 0), "false", 5) == 0) {
         addToPosition (buffer, 5);
         return createSuperPrimitiveBool (arena, 0);
     }
@@ -422,8 +427,7 @@ uint8_t parseNull (FileBuffer* buffer) {
     if (isEndOfFileAmount (buffer, 4)) {
         return 0;
     }
-    if (getValue (buffer, 0) == 'n' && getValue (buffer, 1) == 'u' &&
-    getValue (buffer, 2) == 'l' && getValue (buffer, 3) == 'l') {
+    if (memcmp (getPointer (buffer, 0), "null", 4) == 0) {
         addToPosition (buffer, 4);
         return 1;
     }

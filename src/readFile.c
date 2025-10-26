@@ -49,6 +49,10 @@ uint8_t getValue (FileBuffer* buffer, int64_t offset) {
     return buffer->byteBuffer[(buffer->absolutePosition % buffer->bufferSize) + offset];
 }
 
+void* getPointer (FileBuffer* buffer, int64_t offset) {
+    return (void*)(buffer->byteBuffer + ((buffer->absolutePosition % buffer->bufferSize) + offset));
+}
+
 int isEndOfFile (FileBuffer* buffer) {
     return isEndOfFileAmount (buffer, 0);
 }

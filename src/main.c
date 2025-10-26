@@ -12,12 +12,14 @@
 
 int main (int argc, const char** argv) {
     assert (argc == 2);
-    const char* filename  = argv[1];
-    Arena* arena          = createArena (GET_GB (2));
-    FileBuffer* buffer    = openFile (arena, filename, 4096);
-    EntryValue* value     = createEntryValue (arena, NULL, SUPER_PRIMITIVE);
-    uint32_t return_value = parseJson (arena, buffer, value);
-    if (!return_value) {
+    const char* filename     = argv[1];
+    Arena* arena             = createArena (GET_GB (2));
+    FileBuffer* buffer       = openFile (arena, filename, 4096);
+    EntryValue* value        = createEntryValue (arena, NULL, SUPER_PRIMITIVE);
+    uint32_t failurePosition = parseJson (arena, buffer, value);
+    if (failurePosition) {
+        printf ("Failed at: %u", failurePosition);
+    } else {
         printEntryValueln (value);
     }
 

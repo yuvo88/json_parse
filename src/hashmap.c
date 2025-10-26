@@ -57,7 +57,7 @@ void setHashmapEntry (Arena* arena, Hashmap* hashmap, SuperPrimitive* key, Entry
 
 int setHashmapEntryWithMask (HashmapEntry** entries, HashmapEntry* entry, uint32_t mask
 
-) { // TODO: This function returns a value and I don't think it should
+) {
     assert (entries != NULL);
     assert (entry != NULL);
     assert ((mask + 1) % 2 == 0);
