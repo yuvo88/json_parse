@@ -1,4 +1,5 @@
 #include "parser.h"
+#include "arena.h"
 #include "hashmap.h"
 #include "readFile.h"
 #include "superPrimitive.h"
@@ -294,8 +295,8 @@ SuperPrimitive* parseString (Arena* arena, FileBuffer* buffer) {
     uint32_t i = 0;
     while (!isEndOfFile (buffer) && !IS_QUOTES (getValue (buffer, 0))) {
         if (i > stringSize) {
+            string = arenaRealloc (arena, string, stringSize, stringSize * 2);
             stringSize *= 2;
-            string = realloc (string, stringSize * sizeof (char)); // TODO: think of something better
         }
         if (IS_BACKSLASH (getValue (buffer, 0))) {
 
@@ -374,8 +375,6 @@ SuperPrimitive* parseNumber (Arena* arena, FileBuffer* buffer) {
     addToPosition (buffer, 1);
 
     SuperPrimitive* secondNumber = parseNormalNumber (arena, buffer);
-    printf ("one: %d, second: %d", *(int*)firstNumber->value,
-    *(int*)secondNumber->value);
     float first  = *(float*)firstNumber->value;
     float second = *(float*)secondNumber->value;
     if (firstNumber->type == INTEGER) {

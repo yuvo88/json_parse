@@ -28,8 +28,6 @@ FileBuffer* openFile (Arena* arena, const char* filename, uint32_t bufferSize) {
 
 void closeFile (FileBuffer* buffer) {
     fclose (buffer->fd);
-    free (buffer->byteBuffer);
-    free (buffer);
 }
 
 uint32_t addToPosition (FileBuffer* buffer, uint32_t amount) {

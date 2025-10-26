@@ -79,11 +79,8 @@ void printEntryValue (EntryValue* entryValue, uint32_t spaceAmount) {
     case HASHMAP:
         printHashmap ((Hashmap*)entryValue->value, insideAmount);
         break;
-    case LIST: printList ((List*)entryValue->value, insideAmount);
-               break;
-    case NULL_VALUE:
-               printf("null");
-               break;
+    case LIST: printList ((List*)entryValue->value, insideAmount); break;
+    case NULL_VALUE: printf ("null"); break;
     }
 }
 

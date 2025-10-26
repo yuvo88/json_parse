@@ -1,6 +1,7 @@
 #include "arena.h"
 #include <assert.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -32,6 +33,13 @@ void destroyArena (Arena* arena) {
     free (arena->memory);
     free (arena);
 }
+void* arenaRealloc(Arena* arena, void* pointer, uint64_t oldSize, uint64_t newSize) {
+    void* newPointer = arenaMalloc(arena, newSize);
+    memcpy(newPointer, pointer, oldSize);
+    freeArenaItem(arena, pointer, oldSize);
+
+    return newPointer;
+}
 void* arenaCalloc(Arena* arena, uint64_t size) {
     void* pointer = (uint8_t*)arenaMalloc(arena, size);
     memset(pointer, 0, size);
@@ -48,7 +56,7 @@ void* arenaMalloc (Arena* arena, uint64_t size) {
     }
 
     FreeList* runner = arena->freeList;
-    while (runner != NULL && runner->size > size) {
+    while (runner != NULL && runner->size < size) {
         runner = runner->next;
     }
 

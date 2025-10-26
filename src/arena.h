@@ -17,4 +17,5 @@ void destroyArena (Arena* arena);
 void* arenaMalloc (Arena* arena, uint64_t size);
 void freeArenaItem(Arena* arena, void* pointer, uint64_t size);
 void* arenaCalloc(Arena* arena, uint64_t size);
+void* arenaRealloc(Arena* arena, void* pointer, uint64_t oldSize, uint64_t newSize);
 #endif

@@ -18,7 +18,7 @@ void addValueToList (Arena* arena, List* list, EntryValue* value) {
         return;
     }
 
-    List* newNode  = (List*)(arenaMalloc (arena,sizeof (List)));
+    List* newNode  = (List*)(arenaCalloc (arena,sizeof (List)));
     newNode->value = value;
     List* runner   = list;
     while (runner->next != NULL) {
